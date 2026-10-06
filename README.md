@@ -1,40 +1,53 @@
-# Sistema de gestion TechLab
+# Sistema de gestión TechLab
 
-Preentrega de Java: aplicación de consola para administrar un catálogo y crear pedidos.
+Esta es mi preentrega de Java para Talento Tech. Armé una aplicación de consola para cargar productos, controlar el stock y registrar pedidos, aplicando los temas que vimos en el curso, como clases, colecciones y excepciones.
 
-## Requisitos
+## Java utilizado
 
-- JDK 17 o superior.
-- No requiere dependencias externas.
+Desarrollé y compilé el proyecto con **Eclipse Temurin JDK 17.0.20.1+1**. El JDK no está incluido en este repositorio: para ejecutarlo necesitás tener instalado un **JDK 17 o superior** y poder usar `java` y `javac` desde la terminal.
 
-## Compilar y ejecutar en Windows (PowerShell)
+No hacen falta dependencias externas ni una base de datos. Los productos y pedidos quedan en memoria y se reinician al cerrar el programa.
 
-Desde la carpeta `Proyecto`:
+## Cómo ejecutarlo
+
+### Desde IntelliJ IDEA
+
+Abrí esta carpeta en IntelliJ. Si te pide configurar el JDK, elegí **Setup SDK** y seleccioná la carpeta de un JDK 17 o superior. Después abrí `src/com/techlab/app/Main.java` y ejecutá `Main.main()` con el triángulo verde.
+
+Si IntelliJ no reconoce las clases, hacé clic derecho en `src` y elegí **Mark Directory as → Sources Root**.
+
+### Desde una terminal
+
+Abrí PowerShell o una terminal en esta carpeta, donde está `src`, y compilá el proyecto:
+
+**Windows PowerShell**
 
 ```powershell
-$jdkHome = Get-ChildItem 'E:\DESARROLLO\Herramientas\Java\Temurin-17' -Directory | Select-Object -First 1 -ExpandProperty FullName
 New-Item -ItemType Directory -Force out | Out-Null
-& "$jdkHome\bin\javac.exe" -encoding UTF-8 -d out (Get-ChildItem -Recurse src -Filter *.java | ForEach-Object FullName)
-& "$jdkHome\bin\java.exe" -cp out com.techlab.app.Main
+$sources = Get-ChildItem -Path src -Recurse -Filter *.java | ForEach-Object FullName
+javac -encoding UTF-8 -d out $sources
+java -cp out com.techlab.app.Main
 ```
 
-## Funcionalidades
+**macOS, Linux o Git Bash**
 
-1. Agregar productos con nombre, precio, stock y tipo (general, bebida o comida).
-2. Listar los productos con ID, nombre, tipo, precio y stock.
-3. Buscar por ID o nombre y actualizar precio o stock.
-4. Eliminar productos por ID con confirmación.
-5. Crear pedidos con uno o varios productos, calcular el total y descontar stock.
-6. Listar pedidos con sus artículos y total.
+```bash
+mkdir -p out
+javac -encoding UTF-8 -d out $(find src -name '*.java')
+java -cp out com.techlab.app.Main
+```
 
-Los datos se mantienen en memoria mientras la aplicación está abierta.
+Los archivos compilados se guardan en `out`, una carpeta que no se sube al repositorio.
 
-## Organización
+## Qué se puede hacer
 
-- `com.techlab.app`: menú y entrada/salida por consola.
-- `com.techlab.productos`: producto, bebida y comida.
-- `com.techlab.pedidos`: pedido y sus líneas.
-- `com.techlab.servicios`: inventario y creación de pedidos.
-- `com.techlab.excepciones`: excepciones de dominio.
+- Agregar productos generales, bebidas y comidas, y consultar el catálogo.
+- Buscar productos por ID o nombre, actualizar sus precios o stock y eliminarlos.
+- Crear pedidos con varios productos, calcular el total y descontar el stock.
+- Consultar los pedidos realizados y sus productos.
 
-La clase `Producto` encapsula sus atributos; `Bebida` y `Comida` muestran herencia y polimorfismo. La creación de pedidos valida todo el stock antes de descontarlo, de modo que un pedido inválido no descuenta parcialmente el inventario.
+Para ingresar un precio podés escribir, por ejemplo, `150000` o `150.000,00`. El sistema muestra los importes con formato argentino, como `$150.000,00`.
+
+## Cómo organicé el código
+
+Las clases están separadas en paquetes: `app` contiene el menú, `productos` el catálogo, `pedidos` los pedidos y sus líneas, `servicios` la lógica de gestión y `excepciones` los errores propios del sistema. También usé herencia y polimorfismo para representar bebidas y comidas como tipos de producto.
