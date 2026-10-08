@@ -16,29 +16,6 @@ Abrí esta carpeta en IntelliJ. Si te pide configurar el JDK, elegí **Setup SDK
 
 Si IntelliJ no reconoce las clases, hacé clic derecho en `src` y elegí **Mark Directory as → Sources Root**.
 
-### Desde una terminal
-
-Abrí PowerShell o una terminal en esta carpeta, donde está `src`, y compilá el proyecto:
-
-**Windows PowerShell**
-
-```powershell
-New-Item -ItemType Directory -Force out | Out-Null
-$sources = Get-ChildItem -Path src -Recurse -Filter *.java | ForEach-Object FullName
-javac -encoding UTF-8 -d out $sources
-java -cp out com.techlab.app.Main
-```
-
-**macOS, Linux o Git Bash**
-
-```bash
-mkdir -p out
-javac -encoding UTF-8 -d out $(find src -name '*.java')
-java -cp out com.techlab.app.Main
-```
-
-Los archivos compilados se guardan en `out`, una carpeta que no se sube al repositorio.
-
 ## Qué se puede hacer
 
 - Agregar productos generales, bebidas y comidas, y consultar el catálogo.
