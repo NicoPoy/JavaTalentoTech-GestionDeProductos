@@ -1,6 +1,6 @@
 # API REST de artículos
 
-Proyecto integrador de Java: API REST monolítica en capas para crear, consultar, actualizar y eliminar artículos. Usa Java 17, Spring Boot, Spring Data JPA, Hibernate, Maven y MySQL. La API devuelve y recibe JSON; no incluye una interfaz frontend, según el alcance de esta entrega.
+Backend del proyecto integrador: API REST monolítica en capas para crear, consultar, actualizar y eliminar artículos. Usa Java 17, Spring Boot, Spring Data JPA, Hibernate, Maven y MySQL. La interfaz web complementaria está en `../front`.
 
 ## Requisitos
 
@@ -13,7 +13,7 @@ Proyecto integrador de Java: API REST monolítica en capas para crear, consultar
 
 1. Abrí MySQL Workbench y conectate a tu servidor local.
 2. Ejecutá el contenido de `database/schema.sql`. Esto crea la base `articulos_db` y, si todavía no existe, la tabla `articulo`.
-3. La aplicación usa por defecto el usuario `root` sin contraseña, como en la consigna. Si tu instalación tiene otra configuración, definí `DB_USERNAME` y `DB_PASSWORD` antes de iniciar. También podés cambiar la URL con `DB_URL`.
+3. La configuración predeterminada usa el usuario `root` y la contraseña `admin`. Si tu instalación tiene otras credenciales, definí `DB_USERNAME` y `DB_PASSWORD` antes de iniciar. También podés cambiar la URL con `DB_URL`.
 
 En PowerShell, por ejemplo:
 
@@ -22,12 +22,11 @@ $env:DB_USERNAME = "root"
 $env:DB_PASSWORD = "tu contraseña de MySQL"
 ```
 
-No guardes tu contraseña real en este repositorio. Spring toma esas variables del entorno y `application.properties` contiene únicamente valores de desarrollo.
-Si iniciás la aplicación desde Eclipse, cargá las mismas variables en **Run Configurations… → Environment**. Si `root` no tiene contraseña, podés omitir `DB_PASSWORD`.
+Para otros entornos, preferí configurar las credenciales mediante variables de entorno. Si iniciás la aplicación desde Eclipse, cargá las mismas variables en **Run Configurations… → Environment**.
 
 ## Abrir y ejecutar en Eclipse
 
-1. Abrí el proyecto existente `JavaTalentoTech-GestionDeProductos`.
+1. Abrí como proyecto la carpeta `api` dentro del repositorio `JavaTalentoTech-GestionDeProductos`.
 2. En Package Explorer, clic derecho sobre el proyecto → **Configure → Convert to Maven Project**. Si Eclipse ya lo reconoce como Maven, usá **Maven → Update Project…**.
 3. Esperá a que Maven descargue las dependencias y termine la actualización.
 4. Asegurate de que **Project → Properties → Java Build Path → Libraries** use un JDK 17.
