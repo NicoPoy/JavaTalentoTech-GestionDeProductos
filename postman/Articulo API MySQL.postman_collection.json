@@ -1,0 +1,95 @@
+{
+  "info": {
+    "_postman_id": "f9a2255d-4f84-46b5-9d92-8682c4e3b77e",
+    "name": "Articulo API MySQL",
+    "description": "Pruebas CRUD requeridas por el trabajo práctico. Ejecutar en orden. La aplicación debe estar iniciada y conectada a articulos_db.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8081" },
+    { "key": "articuloId", "value": "" },
+    { "key": "segundoArticuloId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Crear artículo - Lámpara LED",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Lámpara LED de escritorio\",\n  \"precio\": 18900\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{baseUrl}}/api/articulos"
+      },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200', function () { pm.response.to.have.status(200); });", "const articulo = pm.response.json();", "pm.test('Se generó un ID', function () { pm.expect(articulo.id).to.exist; });", "pm.collectionVariables.set('articuloId', articulo.id);"] } }]
+    },
+    {
+      "name": "2. Crear segundo artículo - Auriculares",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Auriculares inalámbricos\",\n  \"precio\": 32900\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{baseUrl}}/api/articulos"
+      },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200', function () { pm.response.to.have.status(200); });", "const articulo = pm.response.json();", "pm.collectionVariables.set('segundoArticuloId', articulo.id);"] } }]
+    },
+    {
+      "name": "3. Listar artículos",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/articulos" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200', function () { pm.response.to.have.status(200); });", "pm.test('La respuesta es una lista', function () { pm.expect(pm.response.json()).to.be.an('array'); });"] } }]
+    },
+    {
+      "name": "4. Consultar artículo existente",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/articulos/{{articuloId}}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200', function () { pm.response.to.have.status(200); });", "pm.test('El artículo tiene nombre y precio', function () { const a = pm.response.json(); pm.expect(a.nombre).to.be.a('string'); pm.expect(a.precio).to.be.a('number'); });"] } }]
+    },
+    {
+      "name": "5. Consultar artículo inexistente (404)",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/articulos/999999999" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 404', function () { pm.response.to.have.status(404); });"] } }]
+    },
+    {
+      "name": "6. Actualizar artículo existente",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Lámpara LED regulable\",\n  \"precio\": 22400\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{baseUrl}}/api/articulos/{{articuloId}}"
+      },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200', function () { pm.response.to.have.status(200); });", "pm.test('Conserva el ID', function () { pm.expect(String(pm.response.json().id)).to.eql(pm.collectionVariables.get('articuloId')); });"] } }]
+    },
+    {
+      "name": "7. Actualizar artículo inexistente (404)",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Soporte ergonómico para monitor\",\n  \"precio\": 27900\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{baseUrl}}/api/articulos/999999999"
+      },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 404', function () { pm.response.to.have.status(404); });"] } }]
+    },
+    {
+      "name": "8. Eliminar artículo existente (204)",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/api/articulos/{{articuloId}}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 204', function () { pm.response.to.have.status(204); });", "pm.test('Sin cuerpo', function () { pm.expect(pm.response.text()).to.eql(''); });"] } }]
+    },
+    {
+      "name": "9. Consultar artículo eliminado (404)",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/articulos/{{articuloId}}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 404', function () { pm.response.to.have.status(404); });"] } }]
+    },
+    {
+      "name": "10. Eliminar artículo inexistente (404)",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/api/articulos/999999999" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 404', function () { pm.response.to.have.status(404); });"] } }]
+    },
+    {
+      "name": "11. Listar artículos (verificar lista vacía manualmente)",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/articulos" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200 y respuesta tipo lista', function () { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.be.an('array'); });", "pm.test('La lista está vacía (usar con la tabla vacía)', function () { pm.expect(pm.response.json()).to.have.lengthOf(0); });"] } }]
+    },
+    {
+      "name": "12. Verificar persistencia (ejecutar después de reiniciar la API)",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/articulos/{{segundoArticuloId}}" },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200 y artículo persistido', function () { pm.response.to.have.status(200); pm.expect(String(pm.response.json().id)).to.eql(pm.collectionVariables.get('segundoArticuloId')); });"] } }]
+    }
+  ]
+}
