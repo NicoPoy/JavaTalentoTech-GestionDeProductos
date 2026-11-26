@@ -2,7 +2,12 @@
 
 ## Presentación
 
-Hola, soy **Nicolás Poy Peters**. Estoy formándome en desarrollo de software y actualmente profundizo mis conocimientos de Java, Spring Boot, bases de datos y desarrollo web. En lo profesional, estoy orientando mi perfil a crear aplicaciones útiles, comprender cómo se conectan sus distintas partes y seguir creciendo como desarrollador. Este repositorio reúne uno de mis proyectos integradores de Talento Tech y refleja ese recorrido de aprendizaje.
+Hola, soy **Nicolás Poy Peters**, Analista Programador Universitario egresado de la Facultad de Informática de la Universidad Nacional de La Plata. Continúo ampliando mi formación en desarrollo web y backend, con interés en crear aplicaciones útiles y entender cómo se conectan sus distintas partes. Este repositorio contiene uno de mis proyectos integradores de Talento Tech y forma parte de mi recorrido como desarrollador. Podés conocer más sobre mi perfil profesional en [LinkedIn](https://www.linkedin.com/in/poynicolas/).
+
+### Formación
+
+- **Analista Programador Universitario** — Facultad de Informática, Universidad Nacional de La Plata (2023).
+- **React JS** — Talento Tech, curso de 80 horas (2026).
 
 ## Sobre el proyecto
 
