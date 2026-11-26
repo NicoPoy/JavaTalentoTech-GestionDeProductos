@@ -6,7 +6,7 @@ Backend en capas con Java 17, Spring Boot 3, Spring Data JPA, Hibernate, Maven y
 
 - JDK 17.
 - MySQL Server.
-- Maven 3.8.6 o superior, o Eclipse con integración Maven (m2e).
+- Visual Studio Code con las extensiones **Extension Pack for Java** y **Spring Boot Extension Pack** (alternativamente, Maven 3.8.6 o superior).
 - Postman para importar la colección de `postman/`.
 
 ## Instalar o actualizar la base
@@ -49,16 +49,19 @@ El pedido creado desde el carrito y el vaciado de ese carrito ocurren en una tra
 
 El login solo identifica por correo para la demostración; no es autenticación segura y no protege los endpoints. En el front podés usar `demo@mercado.local` o crear otro usuario.
 
-## Ejecutar
+## Ejecutar desde Visual Studio Code
 
-### Desde Eclipse
+1. Abrí en VS Code la carpeta raíz del repositorio (`JavaTalentoTech-GestionDeProductos`).
+2. Instalá **Extension Pack for Java** y **Spring Boot Extension Pack** si todavía no están instalados. Esperá a que la extensión Java detecte `api/pom.xml` e importe Maven y sus dependencias.
+3. Seleccioná JDK 17 para el proyecto cuando VS Code lo solicite. Si no lo solicita, abrí la paleta de comandos (`Ctrl+Shift+P`) y usá **Java: Configure Java Runtime** para seleccionar JDK 17.
+4. Confirmá que MySQL esté iniciado y ejecutá `database/migrate_ecommerce.sql` desde MySQL Workbench.
+5. En el explorador, abrí `api/src/main/java/com/ejemplo/articulos/ArticuloApiApplication.java`. Usá el enlace **Run** que aparece sobre `main` o clic derecho en el archivo → **Run Java**. Esperá en la terminal hasta ver `Started ArticuloApiApplication` y `Tomcat started on port 8081`.
 
-1. Abrí la carpeta `api` como proyecto. Si Eclipse no lo reconoce, usá **Configure → Convert to Maven Project**; si ya es Maven, **Maven → Update Project…**.
-2. Esperá que Maven descargue dependencias y seleccioná JDK 17 en **Project → Properties → Java Build Path → Libraries**.
-3. Verificá que MySQL esté iniciado y que ya hayas ejecutado el SQL de arriba.
-4. Clic derecho en `ArticuloApiApplication.java` → **Run As → Java Application**.
+Dejá la ejecución activa mientras usás el front o Postman. No elijas **Run Code** de Code Runner ni compiles esta clase con `javac` directamente: Spring Boot requiere el classpath de Maven y sus dependencias. Si preferís terminal y Maven está instalado, desde la raíz ejecutá `cd api` y `mvn spring-boot:run`. Para generar el JAR, usá `mvn clean package` dentro de `api` y después `java -jar target/articulo-api-mysql-0.0.1-SNAPSHOT.jar`.
 
-La API queda en `http://localhost:8081`. Desde la raíz del repositorio, también podés usar `cd api` y `mvn spring-boot:run`; para generar el JAR: `mvn clean package` y luego `java -jar target/articulo-api-mysql-0.0.1-SNAPSHOT.jar`.
+## Ingresar al front
+
+El script SQL inserta el usuario de demostración **`demo@mercado.local`** en `usuario`. En la pantalla de inicio del front, escribí ese correo y presioná **Ingresar**; no hay contraseña. `root/admin` son las credenciales de MySQL, no las del login. Si el correo no existe, volvé a ejecutar el SQL completo y reiniciá la API. También se puede crear un usuario desde el enlace **¿Todavía no tenés usuario? Crear uno**.
 
 ## Endpoints de artículos originales
 
@@ -97,7 +100,12 @@ Nombre requerido y precio mayor que cero. Se conserva este contrato para la cons
 
 ## Postman
 
-Importá [`postman/Articulo API MySQL.postman_collection.json`](postman/Articulo%20API%20MySQL.postman_collection.json). La colección usa `http://localhost:8081` como `baseUrl`; las solicitudes originales de artículos se ejecutan en orden para reutilizar los IDs.
+Importá [`postman/Articulo API MySQL.postman_collection.json`](postman/Articulo%20API%20MySQL.postman_collection.json). La colección usa `http://localhost:8081` como `baseUrl` y tiene dos partes:
+
+- Las solicitudes principales prueban el CRUD de `/api/articulos` requerido por la consigna.
+- La carpeta **Tienda - flujo integrado** prueba en orden el login demo, categoría, producto con `imagenUrl`, operaciones de carrito, creación del pedido, vaciado del carrito, descuento y reposición de stock, y archivado del producto.
+
+Antes de ejecutarla, corré `database/migrate_ecommerce.sql`, iniciá la API desde VS Code y verificá que esté activa en el puerto 8081. La carpeta de tienda crea un producto de prueba de forma dinámica y lo archiva al final. La solicitud de persistencia de artículos se puede repetir después de reiniciar la API.
 
 ## Código anterior
 

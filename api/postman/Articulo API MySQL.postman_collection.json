@@ -2,13 +2,17 @@
   "info": {
     "_postman_id": "f9a2255d-4f84-46b5-9d92-8682c4e3b77e",
     "name": "Articulo API MySQL",
-    "description": "Pruebas CRUD requeridas por el trabajo práctico. Ejecutar en orden. La aplicación debe estar iniciada y conectada a articulos_db.",
+    "description": "Pruebas CRUD de la API original y flujo integrado de tienda (login, producto con imagen, carrito, pedido y stock). Ejecutar primero database/migrate_ecommerce.sql y luego las solicitudes de cada carpeta en orden. La API debe estar iniciada en localhost:8081.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8081" },
     { "key": "articuloId", "value": "" },
-    { "key": "segundoArticuloId", "value": "" }
+    { "key": "segundoArticuloId", "value": "" },
+    { "key": "usuarioId", "value": "" },
+    { "key": "categoriaId", "value": "" },
+    { "key": "productoId", "value": "" },
+    { "key": "pedidoId", "value": "" }
   ],
   "item": [
     {
@@ -82,14 +86,169 @@
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 404', function () { pm.response.to.have.status(404); });"] } }]
     },
     {
-      "name": "11. Listar artículos (verificar lista vacía manualmente)",
+      "name": "11. Listar artículos - validar respuesta",
       "request": { "method": "GET", "url": "{{baseUrl}}/api/articulos" },
-      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200 y respuesta tipo lista', function () { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.be.an('array'); });", "pm.test('La lista está vacía (usar con la tabla vacía)', function () { pm.expect(pm.response.json()).to.have.lengthOf(0); });"] } }]
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200 y respuesta tipo lista', function () { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.be.an('array'); });"] } }]
     },
     {
       "name": "12. Verificar persistencia (ejecutar después de reiniciar la API)",
       "request": { "method": "GET", "url": "{{baseUrl}}/api/articulos/{{segundoArticuloId}}" },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200 y artículo persistido', function () { pm.response.to.have.status(200); pm.expect(String(pm.response.json().id)).to.eql(pm.collectionVariables.get('segundoArticuloId')); });"] } }]
+    },
+    {
+      "name": "Tienda - flujo integrado (ejecutar en orden)",
+      "item": [
+        {
+          "name": "1. Iniciar sesión con usuario demo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"demo@mercado.local\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Login demo HTTP 200', function () { pm.response.to.have.status(200); });", "const usuario = pm.response.json();", "pm.test('Respuesta contiene usuario', function () { pm.expect(usuario.id).to.exist; pm.expect(usuario.email).to.eql('demo@mercado.local'); });", "pm.collectionVariables.set('usuarioId', usuario.id);"] } }]
+        },
+        {
+          "name": "2. Obtener categoría General",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/categorias" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200', function () { pm.response.to.have.status(200); });", "const categoria = pm.response.json().find(function (item) { return item.nombre.toLowerCase() === 'general'; });", "pm.test('Existe la categoría General (ejecutar el SQL de migración)', function () { pm.expect(categoria, 'No se encontró General').to.exist; });", "if (categoria) pm.collectionVariables.set('categoriaId', categoria.id);"] } }]
+        },
+        {
+          "name": "3. Crear producto con URL de imagen",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Mouse de prueba Postman\",\n  \"descripcion\": \"Producto creado por la colección\",\n  \"imagenUrl\": \"https://example.com/mouse.jpg\",\n  \"precio\": 12000,\n  \"stock\": 10,\n  \"categoriaId\": {{categoriaId}}\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/productos"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Producto creado HTTP 200', function () { pm.response.to.have.status(200); });", "const producto = pm.response.json();", "pm.test('Devuelve ID e imagenUrl', function () { pm.expect(producto.id).to.exist; pm.expect(producto.imagenUrl).to.eql('https://example.com/mouse.jpg'); });", "pm.collectionVariables.set('productoId', producto.id);"] } }]
+        },
+        {
+          "name": "4. Consultar producto e imagen",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/productos/{{productoId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200', function () { pm.response.to.have.status(200); });", "pm.test('Conserva URL e inventario', function () { const p = pm.response.json(); pm.expect(p.imagenUrl).to.eql('https://example.com/mouse.jpg'); pm.expect(p.stock).to.eql(10); });"] } }]
+        },
+        {
+          "name": "5. Agregar dos unidades al carrito del usuario",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"productoId\": {{productoId}},\n  \"cantidad\": 2\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/carritos/{{usuarioId}}/items"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Agrega al carrito HTTP 200', function () { pm.response.to.have.status(200); });", "pm.test('Guarda cantidad 2', function () { pm.expect(pm.response.json().items[0].cantidad).to.eql(2); });"] } }]
+        },
+        {
+          "name": "6. Sumar una unidad más al carrito",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"productoId\": {{productoId}},\n  \"cantidad\": 1\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/carritos/{{usuarioId}}/items"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Suma la cantidad existente', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().items[0].cantidad).to.eql(3); });"] } }]
+        },
+        {
+          "name": "7. Cambiar la cantidad del carrito",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"cantidad\": 2\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/carritos/{{usuarioId}}/items/{{productoId}}"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Actualiza la cantidad', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().items[0].cantidad).to.eql(2); });"] } }]
+        },
+        {
+          "name": "8. Quitar producto individual del carrito",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/carritos/{{usuarioId}}/items/{{productoId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Quita la línea del carrito', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().items).to.have.lengthOf(0); });"] } }]
+        },
+        {
+          "name": "9. Volver a agregar producto para la compra",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"productoId\": {{productoId}},\n  \"cantidad\": 2\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/carritos/{{usuarioId}}/items"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Reagrega dos unidades', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().items[0].cantidad).to.eql(2); });"] } }]
+        },
+        {
+          "name": "10. Vaciar carrito completo",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/carritos/{{usuarioId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Vacía todas las líneas del carrito', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().items).to.have.lengthOf(0); });"] } }]
+        },
+        {
+          "name": "11. Preparar carrito para crear el pedido",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"productoId\": {{productoId}},\n  \"cantidad\": 2\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/carritos/{{usuarioId}}/items"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Carrito preparado', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().items[0].cantidad).to.eql(2); });"] } }]
+        },
+        {
+          "name": "12. Consultar carrito persistido",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/carritos/{{usuarioId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Carrito contiene producto y total', function () { pm.response.to.have.status(200); const c = pm.response.json(); pm.expect(c.items).to.have.lengthOf(1); pm.expect(c.items[0].cantidad).to.eql(2); pm.expect(c.total).to.eql(24000); });"] } }]
+        },
+        {
+          "name": "13. Crear pedido desde el carrito",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"usuarioId\": {{usuarioId}}\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/pedidos/desde-carrito"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Pedido pendiente creado', function () { pm.response.to.have.status(200); const p = pm.response.json(); pm.expect(p.estado).to.eql('PENDIENTE'); pm.expect(p.total).to.eql(24000); pm.collectionVariables.set('pedidoId', p.id); });"] } }]
+        },
+        {
+          "name": "14. Confirmar que el carrito quedó vacío",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/carritos/{{usuarioId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('El carrito se vació tras guardar el pedido', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().items).to.have.lengthOf(0); });"] } }]
+        },
+        {
+          "name": "15. Confirmar pedido y descontar stock",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"CONFIRMADO\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/pedidos/{{pedidoId}}/estado"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Pedido confirmado', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().estado).to.eql('CONFIRMADO'); });"] } }]
+        },
+        {
+          "name": "16. Verificar stock descontado",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/productos/{{productoId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Stock descontado correctamente', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().stock).to.eql(8); });"] } }]
+        },
+        {
+          "name": "17. Cancelar pedido y reponer stock",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"CANCELADO\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/pedidos/{{pedidoId}}/estado"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Pedido cancelado', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().estado).to.eql('CANCELADO'); });"] } }]
+        },
+        {
+          "name": "18. Verificar stock repuesto",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/productos/{{productoId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('El stock vuelve a 10', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().stock).to.eql(10); });"] } }]
+        },
+        {
+          "name": "19. Archivar producto de prueba",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/productos/{{productoId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Producto archivado HTTP 204', function () { pm.response.to.have.status(204); });"] } }]
+        },
+        {
+          "name": "20. Verificar producto archivado",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/productos/{{productoId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Producto conserva datos pero queda inactivo', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().activo).to.eql(false); });"] } }]
+        }
+      ]
     }
   ]
 }

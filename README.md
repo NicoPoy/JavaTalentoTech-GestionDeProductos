@@ -20,12 +20,13 @@ Proyecto integrador con una API REST en Java 17, Spring Boot y MySQL, y un front
 
 ## Inicio rápido
 
-1. Ejecutá una sola vez [`api/database/migrate_ecommerce.sql`](api/database/migrate_ecommerce.sql) en MySQL Workbench. El script instala o actualiza la base `articulos_db` sin borrar los datos existentes.
-2. Iniciá MySQL y la API con JDK 17 desde Eclipse o, si Maven está disponible, ejecutá `cd api` y `mvn spring-boot:run`.
-3. Abrí `front/index.html` con Live Server de VS Code. La API escucha en `http://localhost:8081`.
-4. Ingresá en el front con el correo de un usuario existente, por ejemplo `demo@mercado.local`, creado por el SQL.
+1. En MySQL Workbench, ejecutá el script completo [`api/database/migrate_ecommerce.sql`](api/database/migrate_ecommerce.sql). Crea o actualiza `articulos_db` y agrega el usuario demo.
+2. Abrí la carpeta raíz del repositorio en **Visual Studio Code**. Instalá las extensiones **Extension Pack for Java** y **Spring Boot Extension Pack**, y esperá que VS Code importe el proyecto Maven.
+3. En el explorador de VS Code, abrí `api/src/main/java/com/ejemplo/articulos/ArticuloApiApplication.java` y hacé clic en **Run** arriba del método `main`. La API queda en `http://localhost:8081`; dejá esa ejecución activa.
+4. Abrí `front/index.html` y seleccioná **Go Live** (Live Server). El navegador abre el front en `http://127.0.0.1:5500`.
+5. En la pantalla de acceso, ingresá **`demo@mercado.local`** y presioná **Ingresar**. **No lleva contraseña.**
 
-Las credenciales `root/admin` son únicamente la conexión local a MySQL. El acceso del front es una identificación de demostración por correo, sin contraseña ni protección de endpoints.
+El SQL crea `demo@mercado.local` en la tabla `usuario`. Si el front no acepta ese correo, verificá que ejecutaste el script en MySQL y que la API sigue activa. `root/admin` corresponde únicamente a la conexión de MySQL Workbench; no es el usuario de la tienda.
 
 ## Modelo de datos
 

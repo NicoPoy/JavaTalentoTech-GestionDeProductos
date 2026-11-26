@@ -4,10 +4,12 @@ Panel responsive en HTML, CSS y JavaScript, con tema oscuro e iconos. Permite ge
 
 ## Cómo iniciarlo
 
-1. Ejecutá [`../api/database/migrate_ecommerce.sql`](../api/database/migrate_ecommerce.sql) en MySQL Workbench. Este único script prepara la base completa, conserva `articulo`, crea las tablas de tienda, migra artículos existentes a `producto` y agrega el usuario demo `demo@mercado.local`.
-2. Iniciá la API siguiendo [`../api/README.md`](../api/README.md). Debe responder en `http://localhost:8081`.
-3. Abrí `index.html` con Live Server de VS Code.
-4. Ingresá con `demo@mercado.local` o creá un usuario desde la pantalla inicial. El acceso de demo no pide contraseña.
+1. Ejecutá [`../api/database/migrate_ecommerce.sql`](../api/database/migrate_ecommerce.sql) completo en MySQL Workbench. Crea las tablas y el usuario demo `demo@mercado.local`.
+2. En VS Code, iniciá la API desde `api/src/main/java/com/ejemplo/articulos/ArticuloApiApplication.java` usando **Run** sobre `main`. Seguí [`../api/README.md`](../api/README.md) si hace falta preparar las extensiones Java. La API debe estar activa en `http://localhost:8081`.
+3. Abrí `front/index.html` en VS Code y presioná **Go Live** para servirlo con Live Server.
+4. En el navegador, ingresá **`demo@mercado.local`** y presioná **Ingresar**. No hay contraseña. Si no funciona, verificá que ejecutaste el SQL y que la API sigue activa.
+
+`root/admin` es el usuario y contraseña predeterminados de MySQL; no se ingresan en el login del front. También podés desplegar el formulario **¿Todavía no tenés usuario? Crear uno** y registrar un correo nuevo.
 
 ## Modelo de datos visto desde el front
 
