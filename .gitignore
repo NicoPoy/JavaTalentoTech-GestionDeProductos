@@ -2,5 +2,7 @@ out/
 .idea/
 *.iml
 *.class
-/bin/
-/target/
+/api/bin/
+/api/target/
+/front/node_modules/
+/front/dist/
