@@ -1,11 +1,11 @@
-# Frontend de gestión de artículos
+# Frontend de gestión de tienda
 
-Interfaz responsive en HTML, CSS y JavaScript con tema oscuro e iconos. Se conecta a la API REST local para listar, crear, editar y eliminar artículos. La API actual admite los campos `nombre` y `precio`; el carrito se conserva en `localStorage`.
+Interfaz responsive en HTML, CSS y JavaScript con tema oscuro e iconos, sin imágenes de producto. Permite administrar productos, categorías y usuarios; buscar artículos; controlar stock bajo; armar el carrito; crear pedidos; y consultar el historial por usuario y estado.
 
 ## Ejecución local
 
-1. Iniciá MySQL y luego la API siguiendo [`../api/README.md`](../api/README.md).
-2. Abrí esta carpeta en VS Code y ejecutá `index.html` con **Live Server**.
-3. La interfaz consulta `http://localhost:8081/api/articulos`.
+1. En MySQL Workbench, ejecutá `api/database/migrate_ecommerce.sql` sobre la conexión local. El script conserva `articulo`, crea las tablas de tienda y copia los artículos actuales a `producto` con stock inicial cero.
+2. Iniciá la API siguiendo [`../api/README.md`](../api/README.md).
+3. Abrí `front/index.html` con Live Server de VS Code. La API debe estar disponible en `http://localhost:8081`.
 
-El flujo de pedidos aún no se registra en el backend: para eso es necesario implementar endpoints y persistencia de pedidos en la API.
+Los pedidos se crean como `PENDIENTE`. Al confirmarlos se vuelve a comprobar y descontar el stock; si se cancela un pedido confirmado, el stock se reintegra. El usuario es un registro de cliente para el historial; esta demo no implementa autenticación ni contraseñas.

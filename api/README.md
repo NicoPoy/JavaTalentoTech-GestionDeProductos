@@ -15,6 +15,8 @@ Backend del proyecto integrador: API REST monolítica en capas para crear, consu
 2. Ejecutá el contenido de `database/schema.sql`. Esto crea la base `articulos_db` y, si todavía no existe, la tabla `articulo`.
 3. La configuración predeterminada usa el usuario `root` y la contraseña `admin`. Si tu instalación tiene otras credenciales, definí `DB_USERNAME` y `DB_PASSWORD` antes de iniciar. También podés cambiar la URL con `DB_URL`.
 
+Para habilitar las funciones adicionales de tienda, detené la API y ejecutá todo el archivo `database/migrate_ecommerce.sql` desde MySQL Workbench. Crea las tablas de categorías, productos, usuarios, pedidos y líneas de pedido; conserva la tabla `articulo` del ejercicio original y copia sus registros al catálogo nuevo con stock inicial cero.
+
 En PowerShell, por ejemplo:
 
 ```powershell
@@ -68,6 +70,32 @@ El JSON de entrada para crear o actualizar es:
 ```
 
 El nombre no puede estar vacío y el precio debe ser mayor que cero. Los datos inválidos producen `400 Bad Request`.
+
+## API adicional de tienda
+
+La consigna PDF exige el endpoint `/api/articulos` con los campos `id`, `nombre` y `precio`. Se mantiene sin cambios para sus pruebas de Postman. La interfaz e-commerce usa además estos endpoints:
+
+| Método | Ruta | Uso |
+| --- | --- | --- |
+| GET | `/api/productos?incluirInactivos=true` | Lista productos; archivados opcionales. |
+| GET | `/api/productos/{id}` | Consulta un producto. |
+| GET | `/api/productos/stock-bajo?umbral=5` | Lista productos con stock bajo. |
+| POST | `/api/productos` | Crea producto con nombre, descripción, precio, stock y categoriaId. |
+| PUT | `/api/productos/{id}` | Actualiza esos datos. |
+| DELETE | `/api/productos/{id}` | Archiva el producto para conservar pedidos históricos. |
+| PATCH | `/api/productos/{id}/reactivar` | Reactiva un producto archivado. |
+| GET/POST | `/api/categorias` | Lista o crea categorías. |
+| PUT/DELETE | `/api/categorias/{id}` | Modifica o elimina categorías sin productos asociados. |
+| GET/POST | `/api/usuarios` | Lista o registra usuarios/clientes por correo. |
+| PUT/DELETE | `/api/usuarios/{id}` | Modifica o elimina usuarios sin pedidos. |
+| GET | `/api/pedidos?usuarioId={id}` | Lista todos los pedidos o el historial de un usuario. |
+| GET | `/api/pedidos/{id}` | Consulta un pedido con sus líneas. |
+| POST | `/api/pedidos` | Crea pedido pendiente; body con usuarioId y productos [{ productoId, cantidad }]. |
+| PUT | `/api/pedidos/{id}/estado` | Avanza o cancela el pedido. |
+
+Estados permitidos: `PENDIENTE → CONFIRMADO → ENVIADO → ENTREGADO`; un pedido pendiente o confirmado puede pasar a `CANCELADO`. El stock se descuenta al confirmar, se valida nuevamente en esa operación y se reintegra al cancelar un pedido confirmado. El correo distingue usuarios. Esta demo no incorpora autenticación.
+
+El SQL de migración copia los artículos antiguos a `producto` con stock cero. Editá cada existencia desde el front antes de confirmar pedidos.
 
 ## Colección de Postman
 

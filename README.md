@@ -3,7 +3,7 @@
 Repositorio organizado como un proyecto con backend y frontend:
 
 - [`api/`](api/README.md): API REST en Java 17, Spring Boot, Maven y MySQL. Consultá su README para configurarla y ejecutarla.
-- [`front/`](front/README.md): sitio e-commerce estático en HTML, CSS y JavaScript, conectado al catálogo de la API.
+- [`front/`](front/README.md): panel de tienda responsive en dark mode para catálogo, categorías, usuarios, stock, carrito y pedidos.
 
 Para iniciar el backend desde una terminal abierta en la raíz del repositorio:
 
@@ -14,4 +14,4 @@ mvn spring-boot:run
 
 La API escucha en `http://localhost:8081`.
 
-Para abrir el sitio, iniciá el backend y serví `front/index.html` con Live Server de VS Code. El catálogo y el carrito están disponibles; el envío de pedidos todavía está pendiente de integrar con el backend.
+Para habilitar las tablas de tienda existentes, ejecutá `api/database/migrate_ecommerce.sql` en MySQL Workbench. Iniciá el backend y serví `front/index.html` con Live Server de VS Code. `/api/articulos` se conserva para las pruebas originales del PDF; la interfaz utiliza `/api/productos`, `/api/categorias`, `/api/usuarios` y `/api/pedidos`.
