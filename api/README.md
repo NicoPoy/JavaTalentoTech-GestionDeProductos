@@ -12,10 +12,10 @@ Backend del proyecto integrador: API REST monolítica en capas para crear, consu
 ## Configurar MySQL
 
 1. Abrí MySQL Workbench y conectate a tu servidor local.
-2. Ejecutá el contenido de `database/schema.sql`. Esto crea la base `articulos_db` y, si todavía no existe, la tabla `articulo`.
+2. Ejecutá una sola vez `database/migrate_ecommerce.sql` en MySQL Workbench. Crea `articulos_db`, todas las tablas y el usuario demo; alcanza para una instalación nueva o para actualizar una existente.
 3. La configuración predeterminada usa el usuario `root` y la contraseña `admin`. Si tu instalación tiene otras credenciales, definí `DB_USERNAME` y `DB_PASSWORD` antes de iniciar. También podés cambiar la URL con `DB_URL`.
 
-Para habilitar las funciones adicionales de tienda, detené la API y ejecutá todo el archivo `database/migrate_ecommerce.sql` desde MySQL Workbench. Crea las tablas de categorías, productos, usuarios, pedidos y líneas de pedido; conserva la tabla `articulo` del ejercicio original y copia sus registros al catálogo nuevo con stock inicial cero.
+Para dejar toda la base lista o actualizarla, detené la API y ejecutá todo el archivo `database/migrate_ecommerce.sql` desde MySQL Workbench. Conserva `articulo`, crea las tablas de tienda, copia los artículos al catálogo con stock inicial cero y agrega el usuario demo `demo@mercado.local`. Se puede volver a ejecutar sin borrar los datos.
 
 En PowerShell, por ejemplo:
 
@@ -28,11 +28,11 @@ Para otros entornos, preferí configurar las credenciales mediante variables de 
 
 ## Abrir y ejecutar en Eclipse
 
-1. Abrí como proyecto la carpeta `api` dentro del repositorio `JavaTalentoTech-GestionDeProductos`.
+1. Abrí como proyecto la carpeta `api` dentro del repositorio.
 2. En Package Explorer, clic derecho sobre el proyecto → **Configure → Convert to Maven Project**. Si Eclipse ya lo reconoce como Maven, usá **Maven → Update Project…**.
 3. Esperá a que Maven descargue las dependencias y termine la actualización.
 4. Asegurate de que **Project → Properties → Java Build Path → Libraries** use un JDK 17.
-5. Confirmá que MySQL esté iniciado y que `articulos_db` exista.
+5. Confirmá que MySQL esté iniciado y ejecutá `database/migrate_ecommerce.sql`.
 6. Clic derecho en `ArticuloApiApplication.java` → **Run As → Java Application**. La API queda disponible en `http://localhost:8081`.
 
 También podés abrir una terminal en la raíz del proyecto y ejecutar:
@@ -80,7 +80,7 @@ La consigna PDF exige el endpoint `/api/articulos` con los campos `id`, `nombre`
 | GET | `/api/productos?incluirInactivos=true` | Lista productos; archivados opcionales. |
 | GET | `/api/productos/{id}` | Consulta un producto. |
 | GET | `/api/productos/stock-bajo?umbral=5` | Lista productos con stock bajo. |
-| POST | `/api/productos` | Crea producto con nombre, descripción, precio, stock y categoriaId. |
+| POST | `/api/productos` | Crea producto con nombre, descripción, imagenUrl opcional, precio, stock y categoriaId. |
 | PUT | `/api/productos/{id}` | Actualiza esos datos. |
 | DELETE | `/api/productos/{id}` | Archiva el producto para conservar pedidos históricos. |
 | PATCH | `/api/productos/{id}/reactivar` | Reactiva un producto archivado. |
@@ -88,14 +88,19 @@ La consigna PDF exige el endpoint `/api/articulos` con los campos `id`, `nombre`
 | PUT/DELETE | `/api/categorias/{id}` | Modifica o elimina categorías sin productos asociados. |
 | GET/POST | `/api/usuarios` | Lista o registra usuarios/clientes por correo. |
 | PUT/DELETE | `/api/usuarios/{id}` | Modifica o elimina usuarios sin pedidos. |
+| POST | `/api/auth/login` | Busca un usuario registrado por correo y lo devuelve para el acceso de demostración. |
+| GET/DELETE | `/api/carritos/{usuarioId}` | Consulta o vacía el carrito persistido del usuario. |
+| POST | `/api/carritos/{usuarioId}/items` | Agrega producto y cantidad al carrito; suma la cantidad si ya estaba. |
+| PUT/DELETE | `/api/carritos/{usuarioId}/items/{productoId}` | Cambia cantidad o quita un producto del carrito. |
 | GET | `/api/pedidos?usuarioId={id}` | Lista todos los pedidos o el historial de un usuario. |
 | GET | `/api/pedidos/{id}` | Consulta un pedido con sus líneas. |
 | POST | `/api/pedidos` | Crea pedido pendiente; body con usuarioId y productos [{ productoId, cantidad }]. |
+| POST | `/api/pedidos/desde-carrito` | Valida stock y registra pedido desde el carrito; carrito y pedido se guardan en una transacción. |
 | PUT | `/api/pedidos/{id}/estado` | Avanza o cancela el pedido. |
 
-Estados permitidos: `PENDIENTE → CONFIRMADO → ENVIADO → ENTREGADO`; un pedido pendiente o confirmado puede pasar a `CANCELADO`. El stock se descuenta al confirmar, se valida nuevamente en esa operación y se reintegra al cancelar un pedido confirmado. El correo distingue usuarios. Esta demo no incorpora autenticación.
+Estados permitidos: `PENDIENTE → CONFIRMADO → ENVIADO → ENTREGADO`; un pedido pendiente o confirmado puede pasar a `CANCELADO`. El stock se valida al crear el pedido, se vuelve a comprobar y se descuenta al confirmar, y se reintegra al cancelar un pedido confirmado. Al crear un pedido desde el carrito, este se vacía solo si la transacción se completa correctamente. Cada producto admite `imagenUrl` HTTP/HTTPS opcional; sin URL, el front muestra un ícono. El login de demostración identifica por correo y mantiene la selección en el navegador; no usa contraseña, token ni protege los endpoints. No es autenticación segura ni debe usarse en producción. La contraseña `root/admin` es únicamente la conexión local a MySQL.
 
-El SQL de migración copia los artículos antiguos a `producto` con stock cero. Editá cada existencia desde el front antes de confirmar pedidos.
+El SQL de migración copia los artículos antiguos a `producto` con stock cero. Editá cada existencia desde el front antes de confirmar pedidos. También agrega `imagen_url`, `carrito` y `linea_carrito`; volvé a ejecutar el archivo de migración completo si ya lo habías aplicado.
 
 ## Colección de Postman
 

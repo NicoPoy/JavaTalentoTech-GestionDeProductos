@@ -70,6 +70,7 @@ public class ProductoService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "La categoría indicada no existe."));
         producto.setNombre(request.nombre().trim());
         producto.setDescripcion(request.descripcion() == null ? "" : request.descripcion().trim());
+        producto.setImagenUrl(request.imagenUrl() == null || request.imagenUrl().isBlank() ? null : request.imagenUrl().trim());
         producto.setPrecio(request.precio());
         producto.setStock(request.stock());
         producto.setCategoria(categoria);
@@ -77,7 +78,7 @@ public class ProductoService {
 
     private ProductoResponse response(Producto producto) {
         return new ProductoResponse(producto.getId(), producto.getNombre(), producto.getDescripcion(),
-                producto.getPrecio(), producto.getStock(), producto.getCategoria().getId(),
+                producto.getImagenUrl(), producto.getPrecio(), producto.getStock(), producto.getCategoria().getId(),
                 producto.getCategoria().getNombre(), producto.getActivo());
     }
 

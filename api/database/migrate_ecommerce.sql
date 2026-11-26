@@ -1,12 +1,19 @@
--- Migración de la API simple de artículos a las funciones de tienda.
--- No elimina ni modifica la tabla articulo requerida por el PDF.
--- Ejecutar una vez (se puede volver a ejecutar sin duplicar categorías/productos migrados).
+-- Instalación y migración completa de la API y la tienda.
+-- Se puede ejecutar en una base nueva o existente; no elimina datos.
 
 CREATE DATABASE IF NOT EXISTS articulos_db
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
 USE articulos_db;
+
+-- Tabla original requerida por la entrega de API.
+CREATE TABLE IF NOT EXISTS articulo (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(255) NOT NULL,
+    precio DOUBLE NOT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS categoria (
     id BIGINT NOT NULL AUTO_INCREMENT,
@@ -23,6 +30,7 @@ CREATE TABLE IF NOT EXISTS producto (
     id BIGINT NOT NULL AUTO_INCREMENT,
     nombre VARCHAR(255) NOT NULL,
     descripcion VARCHAR(1500) NOT NULL DEFAULT '',
+    imagen_url VARCHAR(2048) NULL,
     precio DECIMAL(12,2) NOT NULL,
     stock INT NOT NULL DEFAULT 0,
     categoria_id BIGINT NOT NULL,
@@ -36,6 +44,18 @@ CREATE TABLE IF NOT EXISTS producto (
     CONSTRAINT ck_producto_stock CHECK (stock >= 0)
 ) ENGINE=InnoDB;
 
+-- Añade la columna también en instalaciones donde producto ya existía.
+SET @imagen_url_existe = (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'producto' AND column_name = 'imagen_url'
+);
+SET @ddl_imagen_url = IF(@imagen_url_existe = 0,
+    'ALTER TABLE producto ADD COLUMN imagen_url VARCHAR(2048) NULL AFTER descripcion',
+    'SELECT ''La columna imagen_url ya existe''');
+PREPARE stmt_imagen_url FROM @ddl_imagen_url;
+EXECUTE stmt_imagen_url;
+DEALLOCATE PREPARE stmt_imagen_url;
+
 CREATE TABLE IF NOT EXISTS usuario (
     id BIGINT NOT NULL AUTO_INCREMENT,
     nombre VARCHAR(120) NOT NULL,
@@ -43,6 +63,11 @@ CREATE TABLE IF NOT EXISTS usuario (
     PRIMARY KEY (id),
     UNIQUE KEY uk_usuario_email (email)
 ) ENGINE=InnoDB;
+
+-- Usuario de demostración para entrar al front. El login es por correo, sin contraseña.
+INSERT INTO usuario (nombre, email)
+SELECT 'Usuario Demo', 'demo@mercado.local'
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE LOWER(email) = 'demo@mercado.local');
 
 CREATE TABLE IF NOT EXISTS pedido (
     id BIGINT NOT NULL AUTO_INCREMENT,
@@ -77,15 +102,39 @@ CREATE TABLE IF NOT EXISTS linea_pedido (
     CONSTRAINT ck_linea_subtotal CHECK (subtotal >= 0)
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS carrito (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    usuario_id BIGINT NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_carrito_usuario (usuario_id),
+    CONSTRAINT fk_carrito_usuario FOREIGN KEY (usuario_id)
+        REFERENCES usuario (id) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS linea_carrito (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    carrito_id BIGINT NOT NULL,
+    producto_id BIGINT NOT NULL,
+    cantidad INT NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_linea_carrito_producto (carrito_id, producto_id),
+    CONSTRAINT fk_linea_carrito_carrito FOREIGN KEY (carrito_id)
+        REFERENCES carrito (id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_linea_carrito_producto FOREIGN KEY (producto_id)
+        REFERENCES producto (id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT ck_linea_carrito_cantidad CHECK (cantidad > 0)
+) ENGINE=InnoDB;
+
 -- Copia los artículos actuales al catálogo de tienda. Se asigna stock cero
 -- para que el operador cargue la existencia real antes de confirmar pedidos.
-INSERT INTO producto (id, nombre, descripcion, precio, stock, categoria_id, activo)
-SELECT a.id, a.nombre, '', CAST(a.precio AS DECIMAL(12,2)), 0, c.id, TRUE
+INSERT INTO producto (id, nombre, descripcion, imagen_url, precio, stock, categoria_id, activo)
+SELECT a.id, a.nombre, '', NULL, CAST(a.precio AS DECIMAL(12,2)), 0, c.id, TRUE
 FROM articulo a
 JOIN categoria c ON LOWER(c.nombre) = 'general'
 WHERE NOT EXISTS (SELECT 1 FROM producto p WHERE p.id = a.id);
 
--- Revisar tablas y productos migrados.
+-- Revisar tablas, usuario de demostración y productos migrados.
 SHOW TABLES;
 SELECT * FROM categoria;
+SELECT * FROM usuario;
 SELECT * FROM producto ORDER BY id;

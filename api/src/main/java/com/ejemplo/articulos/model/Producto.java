@@ -29,6 +29,9 @@ public class Producto {
     @Column(length = 1500)
     private String descripcion;
 
+    @Column(name = "imagen_url", length = 2048)
+    private String imagenUrl;
+
     @NotNull
     @Positive
     @Column(nullable = false, precision = 12, scale = 2)
@@ -54,6 +57,8 @@ public class Producto {
     public void setNombre(String nombre) { this.nombre = nombre; }
     public String getDescripcion() { return descripcion; }
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+    public String getImagenUrl() { return imagenUrl; }
+    public void setImagenUrl(String imagenUrl) { this.imagenUrl = imagenUrl; }
     public BigDecimal getPrecio() { return precio; }
     public void setPrecio(BigDecimal precio) { this.precio = precio; }
     public Integer getStock() { return stock; }

@@ -25,6 +25,13 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public List<UsuarioResponse> listar() { return usuarios.findAll().stream().map(this::response).toList(); }
 
+    @Transactional(readOnly = true)
+    public UsuarioResponse login(String email) {
+        Usuario usuario = usuarios.findByEmailIgnoreCase(email.trim())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No existe un usuario con ese correo."));
+        return response(usuario);
+    }
+
     public UsuarioResponse crear(UsuarioRequest request) {
         String email = request.email().trim().toLowerCase();
         if (usuarios.findByEmailIgnoreCase(email).isPresent()) throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo.");

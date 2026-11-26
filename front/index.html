@@ -12,7 +12,33 @@
     <script src="js/script.js" defer></script>
   </head>
   <body>
-    <div class="app-shell">
+    <main class="auth-screen" id="login-screen">
+      <section class="auth-card" aria-labelledby="login-title">
+        <span class="brand-mark auth-mark" aria-hidden="true">▣</span>
+        <span class="eyebrow">MERCADO · TIENDA</span>
+        <h1 id="login-title">Ingresá a tu cuenta</h1>
+        <p class="auth-intro">Usá el correo de un usuario registrado para ver su historial y crear pedidos a su nombre.</p>
+        <form id="login-form" novalidate>
+          <label class="field-label" for="login-email">Correo electrónico</label>
+          <input class="form-control" id="login-email" type="email" autocomplete="email" required />
+          <p class="form-error" id="login-error" role="alert"></p>
+          <button class="button button-primary auth-submit" type="submit">Ingresar</button>
+        </form>
+        <details class="register-details">
+          <summary>¿Todavía no tenés usuario? Crear uno</summary>
+          <form id="register-form" novalidate>
+            <label class="field-label" for="register-name">Nombre</label>
+            <input class="form-control" id="register-name" maxlength="120" required />
+            <label class="field-label" for="register-email">Correo electrónico</label>
+            <input class="form-control" id="register-email" type="email" autocomplete="email" required maxlength="190" />
+            <p class="form-error" id="register-error" role="alert"></p>
+            <button class="button button-light auth-submit" type="submit">Crear usuario e ingresar</button>
+          </form>
+        </details>
+        <p class="auth-note">Acceso de demostración por correo, sin contraseña. No es autenticación segura.</p>
+      </section>
+    </main>
+    <div class="app-shell" id="app-shell" hidden>
       <aside class="sidebar" aria-label="Navegación principal">
         <a class="brand" href="#inicio"><span class="brand-mark" aria-hidden="true">▣</span><span>mercado<span class="brand-dot">.</span><small>Panel de gestión</small></span></a>
         <p class="nav-caption">MENÚ PRINCIPAL</p>
@@ -23,7 +49,7 @@
           <button class="nav-link" type="button" data-view="orders-view"><span class="nav-icon">▤</span> Pedidos <span class="nav-badge" id="orders-counter">0</span></button>
           <button class="nav-link" id="open-cart" type="button"><span class="nav-icon">♧</span> Carrito <span class="nav-badge" id="cart-counter-nav">0</span></button>
         </nav>
-        <div class="sidebar-user"><span class="avatar">A</span><span><strong>Administrador</strong><small>Gestión de tienda</small></span><span class="user-dots">•••</span></div>
+        <div class="sidebar-user"><span class="avatar" id="current-avatar">U</span><span class="sidebar-user-copy"><strong id="current-user-name">Usuario</strong><small id="current-user-email"></small></span><button class="logout-button" id="logout-button" type="button">Salir</button></div>
       </aside>
 
       <main class="main-area" id="inicio">
@@ -62,10 +88,11 @@
     </div>
 
     <div class="modal-backdrop" id="product-modal" hidden><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="form-title">
-      <button class="dialog-close" id="close-modal" type="button" aria-label="Cerrar">×</button><span class="dialog-icon">✦</span><span class="eyebrow">CATÁLOGO</span><h2 id="form-title">Nuevo producto</h2><p class="dialog-subtitle">Completá los datos del producto. Las imágenes se mantienen fuera del catálogo por ahora.</p>
+      <button class="dialog-close" id="close-modal" type="button" aria-label="Cerrar">×</button><span class="dialog-icon">✦</span><span class="eyebrow">CATÁLOGO</span><h2 id="form-title">Nuevo producto</h2><p class="dialog-subtitle">Agregá una URL pública si querés mostrar una imagen; si la dejás vacía, aparece un ícono.</p>
       <form id="product-form" novalidate>
         <label class="field-label" for="product-name">Nombre</label><input class="form-control" id="product-name" maxlength="255" required />
         <label class="field-label" for="product-description">Descripción</label><textarea class="form-control textarea-control" id="product-description" maxlength="1500" rows="3"></textarea>
+        <label class="field-label" for="product-image-url">URL de imagen (opcional)</label><input class="form-control" id="product-image-url" type="url" maxlength="2048" placeholder="https://..." />
         <div class="form-row"><div><label class="field-label" for="product-price">Precio</label><div class="price-input"><span>$</span><input class="form-control" id="product-price" type="number" min="0.01" step="0.01" required /></div></div><div><label class="field-label" for="product-stock">Stock</label><input class="form-control" id="product-stock" type="number" min="0" step="1" required /></div></div>
         <label class="field-label" for="product-category">Categoría</label><select class="form-control" id="product-category" required></select><p class="form-error" id="form-error" role="alert"></p>
         <div class="dialog-actions"><button class="button button-light" id="cancel-modal" type="button">Cancelar</button><button class="button button-primary" id="save-product" type="submit">Guardar producto</button></div>
@@ -82,7 +109,7 @@
     <aside class="cart-sidebar" id="cart-sidebar" aria-label="Carrito" aria-hidden="true">
       <div class="cart-header"><div><span class="eyebrow">TU SELECCIÓN</span><h2>Carrito <span id="cart-counter-panel">0</span></h2></div><button id="close-cart" class="dialog-close" type="button" aria-label="Cerrar carrito">×</button></div>
       <div id="cart-items" class="cart-items"></div>
-      <div class="cart-footer"><label class="field-label" for="checkout-user">Usuario del pedido</label><select id="checkout-user" class="form-control"></select><div class="cart-total"><span>Total</span><strong id="cart-total">$0,00</strong></div><p>El stock se descuenta al confirmar el pedido.</p><button id="clear-cart" class="button button-light" type="button">Vaciar carrito</button><button id="checkout-button" class="button button-primary" type="button" disabled>Crear pedido pendiente</button></div>
+      <div class="cart-footer"><span class="field-label">Pedido para</span><p class="checkout-user" id="checkout-current-user"></p><div class="cart-total"><span>Total estimado</span><strong id="cart-total">$0,00</strong></div><p>El stock se descuenta al confirmar el pedido.</p><button id="clear-cart" class="button button-light" type="button">Vaciar carrito</button><button id="checkout-button" class="button button-primary" type="button" disabled>Crear pedido pendiente</button></div>
     </aside>
   </body>
 </html>

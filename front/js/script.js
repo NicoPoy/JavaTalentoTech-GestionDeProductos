@@ -11,13 +11,40 @@ document.addEventListener("DOMContentLoaded", () => {
   let identityEditId = null;
   let identityKind = "category";
   let toastTimer;
-  let cart = readCart();
+  let currentUser = null;
+  let savedSession = readSession();
+  let cart = { usuarioId: null, items: [], total: 0 };
 
-  function readCart() {
-    try {
-      const value = JSON.parse(localStorage.getItem("mercado-cart") || "[]");
-      return Array.isArray(value) ? value.filter((item) => item && Number.isFinite(Number(item.id)) && Number(item.price) > 0) : [];
-    } catch { return []; }
+  function readSession() {
+    try { return JSON.parse(localStorage.getItem("mercado-user") || "null"); }
+    catch { return null; }
+  }
+
+  function enterSession(user) {
+    currentUser = user;
+    savedSession = null;
+    localStorage.setItem("mercado-user", JSON.stringify(user));
+    $("login-screen").hidden = true;
+    $("app-shell").hidden = false;
+    $("current-avatar").textContent = (user.nombre || "U").trim().charAt(0).toLocaleUpperCase("es");
+    $("current-user-name").textContent = user.nombre;
+    $("current-user-email").textContent = user.email;
+    $("checkout-current-user").textContent = `${user.nombre} · ${user.email}`;
+    cart = { usuarioId: user.id, items: [], total: 0 };
+    renderCart();
+    updateCategorySelects();
+    Promise.all([loadCart(), loadOrders()]);
+  }
+
+  function logout() {
+    currentUser = null;
+    localStorage.removeItem("mercado-user");
+    $("app-shell").hidden = true;
+    $("login-screen").hidden = false;
+    $("login-email").value = "";
+    $("login-error").textContent = "";
+    cart = { usuarioId: null, items: [], total: 0 };
+    renderCart();
   }
 
   function message(id, text, kind = "") {
@@ -54,6 +81,41 @@ document.addEventListener("DOMContentLoaded", () => {
     return body ? JSON.parse(body) : null;
   }
 
+  async function loadCart() {
+    if (!currentUser) return;
+    const usuarioId = currentUser.id;
+    try {
+      const carrito = await api(`/carritos/${usuarioId}`);
+      if (currentUser?.id !== usuarioId) return;
+      cart = carrito; renderCart();
+    }
+    catch (error) { notify(`No se pudo cargar el carrito: ${error.message}`, true); }
+  }
+
+  $("login-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const email = $("login-email").value.trim();
+    if (!$("login-email").checkValidity()) { $("login-error").textContent = "Ingresá un correo válido."; return; }
+    $("login-error").textContent = "";
+    try {
+      const user = await api("/auth/login", { method: "POST", body: JSON.stringify({ email }) });
+      enterSession(user);
+    } catch (error) { $("login-error").textContent = `${error.message} Si todavía no existe, crealo abajo.`; }
+  });
+
+  $("register-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const payload = { nombre: $("register-name").value.trim(), email: $("register-email").value.trim() };
+    if (!payload.nombre || !$("register-email").checkValidity()) { $("register-error").textContent = "Completá el nombre e ingresá un correo válido."; return; }
+    $("register-error").textContent = "";
+    try {
+      const user = await api("/usuarios", { method: "POST", body: JSON.stringify(payload) });
+      users = await api("/usuarios"); renderUsers(); enterSession(user);
+    } catch (error) { $("register-error").textContent = error.message; }
+  });
+
+  $("logout-button").addEventListener("click", logout);
+
   function switchView(viewId) {
     document.querySelectorAll(".management-view").forEach((view) => { view.hidden = view.id !== viewId; });
     document.querySelectorAll(".side-nav [data-view]").forEach((button) => button.classList.toggle("active", button.dataset.view === viewId));
@@ -77,7 +139,11 @@ document.addEventListener("DOMContentLoaded", () => {
     card.className = "product-card";
     const top = document.createElement("div"); top.className = "product-card-top";
     const icon = document.createElement("span"); icon.className = "product-icon"; icon.setAttribute("aria-hidden", "true"); icon.textContent = symbols[index % symbols.length];
-    const id = document.createElement("span"); id.className = "product-id"; id.textContent = `ID #${product.id}`; top.append(icon, id);
+    const id = document.createElement("span"); id.className = "product-id"; id.textContent = `ID #${product.id}`;
+    if (product.imagenUrl) {
+      const image = document.createElement("img"); image.className = "product-image"; image.src = product.imagenUrl; image.alt = product.nombre; image.loading = "lazy"; image.referrerPolicy = "no-referrer";
+      image.addEventListener("error", () => { image.remove(); top.prepend(icon); }, { once: true }); top.append(image, id);
+    } else top.append(icon, id);
     const name = document.createElement("h3"); name.textContent = product.nombre; name.title = product.nombre;
     if (product.activo === false) { const archived = document.createElement("span"); archived.className = "archived-tag"; archived.textContent = "Archivado"; name.append(archived); }
     const price = document.createElement("p"); price.className = "product-price"; price.textContent = currency.format(Number(product.precio));
@@ -124,6 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
       products = await api(`/productos?incluirInactivos=${$("show-archived").checked}`);
       $("connection-label").textContent = "API conectada · MySQL";
       renderProducts(); renderCategories(); message("products-status", "Catálogo actualizado.", "success");
+      if (currentUser) await loadCart();
     } catch (error) { message("products-status", error.message, "error"); }
   }
 
@@ -134,6 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $("save-product").textContent = product ? "Guardar cambios" : "Guardar producto";
     $("product-name").value = product?.nombre || "";
     $("product-description").value = product?.descripcion || "";
+    $("product-image-url").value = product?.imagenUrl || "";
     $("product-price").value = product?.precio ?? "";
     $("product-stock").value = product?.stock ?? 0;
     const select = $("product-category"); select.replaceChildren();
@@ -147,8 +215,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function saveProduct(event) {
     event.preventDefault();
-    const payload = { nombre: $("product-name").value.trim(), descripcion: $("product-description").value.trim(), precio: Number($("product-price").value), stock: Number($("product-stock").value), categoriaId: Number($("product-category").value) };
-    if (!payload.nombre || !Number.isFinite(payload.precio) || payload.precio <= 0 || !Number.isInteger(payload.stock) || payload.stock < 0 || !payload.categoriaId) { $("form-error").textContent = "Completá los campos y verificá precio, stock y categoría."; return; }
+    const payload = { nombre: $("product-name").value.trim(), descripcion: $("product-description").value.trim(), imagenUrl: $("product-image-url").value.trim() || null, precio: Number($("product-price").value), stock: Number($("product-stock").value), categoriaId: Number($("product-category").value) };
+    if (!payload.nombre || !Number.isFinite(payload.precio) || payload.precio <= 0 || !Number.isInteger(payload.stock) || payload.stock < 0 || !payload.categoriaId || !$("product-image-url").checkValidity()) { $("form-error").textContent = "Completá los campos y verificá precio, stock, categoría y URL de imagen."; return; }
     const editing = productEditId !== null; const id = productEditId; $("save-product").disabled = true; $("form-error").textContent = "";
     try {
       await api(editing ? `/productos/${id}` : "/productos", { method: editing ? "PUT" : "POST", body: JSON.stringify(payload) });
@@ -196,14 +264,22 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!users.length) { list.append(emptyState("No hay usuarios", "Agregá un usuario antes de crear su primer pedido.")); return; }
     users.forEach((user) => {
       list.append(simpleRow("♙", user.nombre, user.email, [
-        ["Historial", () => { $("filter-order-user").value = String(user.id); switchView("orders-view"); }, ""],
         ["Editar", () => openIdentity("user", user), ""], ["Eliminar", () => deleteUser(user), "delete"],
       ]));
     });
   }
 
   async function loadUsers() {
-    try { users = await api("/usuarios"); renderUsers(); updateCategorySelects(); }
+    try {
+      users = await api("/usuarios"); renderUsers(); updateCategorySelects();
+      if (savedSession) {
+        const user = users.find((entry) => entry.id === savedSession.id && entry.email.toLowerCase() === String(savedSession.email).toLowerCase());
+        if (user) enterSession(user); else { savedSession = null; localStorage.removeItem("mercado-user"); }
+      } else if (currentUser) {
+        const user = users.find((entry) => entry.id === currentUser.id);
+        if (user) enterSession(user); else logout();
+      }
+    }
     catch (error) { message("users-status", error.message, "error"); }
   }
 
@@ -214,13 +290,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateCategorySelects() {
-    const orderUser = $("checkout-user"); const filterUser = $("filter-order-user");
-    const currentOrderUser = orderUser.value; const currentFilterUser = filterUser.value;
-    orderUser.replaceChildren(new Option(users.length ? "Seleccionar usuario…" : "Primero creá un usuario", ""));
-    filterUser.replaceChildren(new Option("Todos los usuarios", ""));
-    users.forEach((user) => { orderUser.add(new Option(`${user.nombre} · ${user.email}`, user.id)); filterUser.add(new Option(user.nombre, user.id)); });
-    if (users.some((user) => String(user.id) === currentOrderUser)) orderUser.value = currentOrderUser;
-    if (users.some((user) => String(user.id) === currentFilterUser)) filterUser.value = currentFilterUser;
+    const filterUser = $("filter-order-user");
+    filterUser.replaceChildren(currentUser
+      ? new Option(`Mi historial · ${currentUser.nombre}`, currentUser.id)
+      : new Option("Todos los usuarios", ""));
+    filterUser.value = currentUser ? String(currentUser.id) : "";
   }
 
   function openIdentity(kind, entity = null) {
@@ -276,10 +350,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadOrders() {
+    if (!currentUser) { orders = []; renderOrders(); updateStats(); return; }
     message("orders-status", "Cargando historial…");
     try {
-      const userId = $("filter-order-user").value;
-      orders = await api(`/pedidos${userId ? `?usuarioId=${encodeURIComponent(userId)}` : ""}`);
+      orders = await api(`/pedidos?usuarioId=${encodeURIComponent(currentUser.id)}`);
       renderOrders(); renderUsers(); updateStats(); message("orders-status", "Historial actualizado.", "success");
     } catch (error) { message("orders-status", error.message, "error"); }
   }
@@ -312,47 +386,84 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!window.confirm(prompts[estado])) return;
     try {
       await api(`/pedidos/${order.id}/estado`, { method: "PUT", body: JSON.stringify({ estado }) });
-      await Promise.all([loadOrders(), loadProducts()]); notify(`Pedido #${order.id}: ${statusNames[estado].toLowerCase()}.`);
+      await Promise.all([loadOrders(), loadProducts(), loadCart()]); notify(`Pedido #${order.id}: ${statusNames[estado].toLowerCase()}.`);
     } catch (error) { notify(error.message, true); }
   }
 
-  function saveCart() { localStorage.setItem("mercado-cart", JSON.stringify(cart)); renderCart(); }
-  function addToCart(product) {
-    const item = cart.find((entry) => entry.id === product.id);
-    if (item) item.quantity += 1; else cart.push({ id: product.id, title: product.nombre, price: Number(product.precio), quantity: 1 });
-    saveCart(); notify("Producto agregado al carrito.");
+  async function addToCart(product) {
+    if (!currentUser) { notify("Iniciá sesión para usar el carrito.", true); return; }
+    try {
+      cart = await api(`/carritos/${currentUser.id}/items`, {
+        method: "POST", body: JSON.stringify({ productoId: product.id, cantidad: 1 }),
+      });
+      renderCart(); notify("Producto guardado en tu carrito.");
+    } catch (error) { notify(error.message, true); }
+  }
+
+  async function changeCartQuantity(item, cantidad) {
+    try {
+      cart = await api(`/carritos/${currentUser.id}/items/${item.productoId}`, {
+        method: "PUT", body: JSON.stringify({ cantidad }),
+      });
+      renderCart();
+    } catch (error) { notify(error.message, true); }
+  }
+
+  async function removeCartItem(item) {
+    try {
+      cart = await api(`/carritos/${currentUser.id}/items/${item.productoId}`, { method: "DELETE" });
+      renderCart(); notify("Producto quitado del carrito.");
+    } catch (error) { notify(error.message, true); }
+  }
+
+  async function clearCart() {
+    if (!currentUser) return;
+    try {
+      cart = await api(`/carritos/${currentUser.id}`, { method: "DELETE" });
+      renderCart();
+    } catch (error) { notify(error.message, true); }
   }
 
   function renderCart() {
-    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const items = cart?.items || [];
+    const count = items.reduce((sum, item) => sum + item.cantidad, 0);
     $("cart-counter").textContent = String(count); $("cart-counter-nav").textContent = String(count); $("cart-counter-panel").textContent = String(count);
-    $("cart-total").textContent = currency.format(cart.reduce((sum, item) => sum + item.price * item.quantity, 0));
+    $("cart-total").textContent = currency.format(Number(cart?.total || 0));
     const container = $("cart-items"); container.replaceChildren();
-    if (!cart.length) container.append(emptyState("Carrito vacío", "Agregá productos del catálogo para crear un pedido."));
-    cart.forEach((item) => {
+    if (!items.length) container.append(emptyState("Carrito vacío", "Agregá productos del catálogo para crear un pedido."));
+    items.forEach((item) => {
       const row = document.createElement("article"); row.className = "cart-item";
       const icon = document.createElement("span"); icon.className = "cart-item-icon"; icon.textContent = "▧";
       const info = document.createElement("div"); info.className = "cart-item-info";
-      const name = document.createElement("strong"); name.textContent = item.title;
-      const detail = document.createElement("small"); detail.textContent = `${item.quantity} × ${currency.format(item.price)}`; info.append(name, detail);
-      const remove = document.createElement("button"); remove.type = "button"; remove.className = "cart-item-remove"; remove.textContent = "×"; remove.setAttribute("aria-label", `Quitar ${item.title}`);
-      remove.addEventListener("click", () => { cart = cart.filter((entry) => entry.id !== item.id); saveCart(); }); row.append(icon, info, remove); container.append(row);
+      const name = document.createElement("strong"); name.textContent = item.nombre;
+      const detail = document.createElement("small"); detail.textContent = `${item.cantidad} × ${currency.format(Number(item.precioUnitario))} · Subtotal ${currency.format(Number(item.subtotal))}`;
+      const quantity = document.createElement("div"); quantity.className = "cart-quantity";
+      const decrease = document.createElement("button"); decrease.type = "button"; decrease.textContent = "−"; decrease.setAttribute("aria-label", `Restar una unidad de ${item.nombre}`); decrease.disabled = item.cantidad <= 1; decrease.addEventListener("click", () => changeCartQuantity(item, item.cantidad - 1));
+      const countLabel = document.createElement("span"); countLabel.textContent = String(item.cantidad);
+      const increase = document.createElement("button"); increase.type = "button"; increase.textContent = "+"; increase.setAttribute("aria-label", `Sumar una unidad de ${item.nombre}`); increase.addEventListener("click", () => changeCartQuantity(item, item.cantidad + 1));
+      quantity.append(decrease, countLabel, increase); info.append(name, detail, quantity);
+      const remove = document.createElement("button"); remove.type = "button"; remove.className = "cart-item-remove"; remove.textContent = "×"; remove.setAttribute("aria-label", `Quitar ${item.nombre}`); remove.addEventListener("click", () => removeCartItem(item));
+      row.append(icon, info, remove);
+      if (item.imagenUrl) {
+        const image = document.createElement("img"); image.className = "cart-item-image"; image.src = item.imagenUrl; image.alt = item.nombre; image.loading = "lazy"; image.referrerPolicy = "no-referrer";
+        image.addEventListener("error", () => { image.replaceWith(icon); }, { once: true }); row.replaceChild(image, icon);
+      }
+      container.append(row);
     });
-    $("checkout-button").disabled = cart.length === 0;
+    $("checkout-button").disabled = !items.length;
   }
 
   async function createOrder() {
-    const usuarioId = Number($("checkout-user").value);
-    if (!cart.length) return;
-    if (!usuarioId) { notify("Elegí un usuario. Si todavía no existe, crealo en la sección Usuarios.", true); return; }
-    const payload = { usuarioId, productos: cart.map((item) => ({ productoId: item.id, cantidad: item.quantity })) };
+    const usuarioId = currentUser?.id;
+    if (!cart?.items?.length) return;
+    if (!usuarioId) { notify("Iniciá sesión antes de crear un pedido.", true); return; }
     $("checkout-button").disabled = true;
     try {
-      const order = await api("/pedidos", { method: "POST", body: JSON.stringify(payload) });
-      cart = []; saveCart(); closeCart(); $("filter-order-user").value = String(usuarioId); switchView("orders-view"); await loadOrders();
+      const order = await api("/pedidos/desde-carrito", { method: "POST", body: JSON.stringify({ usuarioId }) });
+      cart = { usuarioId, items: [], total: 0 }; renderCart(); closeCart(); switchView("orders-view"); await loadOrders();
       notify(`Pedido #${order.id} creado como pendiente. Confirmalo para descontar el stock.`);
     } catch (error) { notify(error.message, true); }
-    finally { $("checkout-button").disabled = cart.length === 0; }
+    finally { $("checkout-button").disabled = !cart?.items?.length; }
   }
 
   function openCart() { $("cart-sidebar").classList.add("open"); $("cart-sidebar").setAttribute("aria-hidden", "false"); $("cart-overlay").classList.add("active"); }
@@ -364,7 +475,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("new-category").addEventListener("click", () => openIdentity("category")); $("new-user").addEventListener("click", () => openIdentity("user")); $("close-identity").addEventListener("click", closeIdentity); $("cancel-identity").addEventListener("click", closeIdentity); $("identity-modal").addEventListener("click", (event) => { if (event.target === $("identity-modal")) closeIdentity(); }); $("identity-form").addEventListener("submit", saveIdentity);
   $("refresh-orders").addEventListener("click", loadOrders); $("search-orders").addEventListener("input", renderOrders); $("filter-order-status").addEventListener("change", renderOrders); $("filter-order-user").addEventListener("change", loadOrders);
   $("open-cart").addEventListener("click", openCart); $("open-cart-top").addEventListener("click", openCart); $("close-cart").addEventListener("click", closeCart); $("cart-overlay").addEventListener("click", closeCart);
-  $("clear-cart").addEventListener("click", () => { cart = []; saveCart(); }); $("checkout-button").addEventListener("click", createOrder);
+  $("clear-cart").addEventListener("click", clearCart); $("checkout-button").addEventListener("click", createOrder);
   document.addEventListener("keydown", (event) => { if (event.key === "Escape") { if (!$("product-modal").hidden) closeProductForm(); if (!$("identity-modal").hidden) closeIdentity(); closeCart(); } });
 
   renderCart(); updateCategorySelects();

@@ -6,11 +6,13 @@ import com.ejemplo.articulos.dto.LineaPedidoResponse;
 import com.ejemplo.articulos.dto.PedidoRequest;
 import com.ejemplo.articulos.dto.PedidoResponse;
 import com.ejemplo.articulos.model.EstadoPedido;
+import com.ejemplo.articulos.model.Carrito;
 import com.ejemplo.articulos.model.LineaPedido;
 import com.ejemplo.articulos.model.Pedido;
 import com.ejemplo.articulos.model.Producto;
 import com.ejemplo.articulos.model.Usuario;
 import com.ejemplo.articulos.repository.PedidoRepository;
+import com.ejemplo.articulos.repository.CarritoRepository;
 import com.ejemplo.articulos.repository.ProductoRepository;
 import com.ejemplo.articulos.repository.UsuarioRepository;
 import java.math.BigDecimal;
@@ -28,11 +30,13 @@ import org.springframework.web.server.ResponseStatusException;
 @Transactional
 public class PedidoService {
     private final PedidoRepository pedidos;
+    private final CarritoRepository carritos;
     private final ProductoRepository productos;
     private final UsuarioRepository usuarios;
 
-    public PedidoService(PedidoRepository pedidos, ProductoRepository productos, UsuarioRepository usuarios) {
+    public PedidoService(PedidoRepository pedidos, CarritoRepository carritos, ProductoRepository productos, UsuarioRepository usuarios) {
         this.pedidos = pedidos;
+        this.carritos = carritos;
         this.productos = productos;
         this.usuarios = usuarios;
     }
@@ -71,6 +75,24 @@ public class PedidoService {
         pedido.setLineas(lineas);
         pedido.setTotal(total);
         return response(pedidos.save(pedido));
+    }
+
+    public PedidoResponse crearDesdeCarrito(Long usuarioId) {
+        if (!usuarios.existsById(usuarioId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado.");
+        }
+        Carrito carrito = carritos.findByUsuarioIdWithDetails(usuarioId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "El carrito está vacío."));
+        if (carrito.getLineas().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "El carrito está vacío.");
+        }
+        List<LineaPedidoRequest> lineas = carrito.getLineas().stream()
+                .map(linea -> new LineaPedidoRequest(linea.getProducto().getId(), linea.getCantidad()))
+                .toList();
+        PedidoResponse pedido = crear(new PedidoRequest(usuarioId, lineas));
+        carrito.getLineas().clear();
+        carritos.save(carrito);
+        return pedido;
     }
 
     @Transactional(readOnly = true)
