@@ -1,5 +1,11 @@
 # JavaTalentoTech — Gestión de productos y tienda
 
+## Presentación
+
+Hola, soy **Nicolás Poy Peters**. Estoy formándome en desarrollo de software y actualmente profundizo mis conocimientos de Java, Spring Boot, bases de datos y desarrollo web. En lo profesional, estoy orientando mi perfil a crear aplicaciones útiles, comprender cómo se conectan sus distintas partes y seguir creciendo como desarrollador. Este repositorio reúne uno de mis proyectos integradores de Talento Tech y refleja ese recorrido de aprendizaje.
+
+## Sobre el proyecto
+
 Proyecto integrador con una API REST en Java 17, Spring Boot y MySQL, y un front responsive en HTML, CSS y JavaScript. El panel permite administrar productos, categorías y usuarios; conservar un carrito por usuario; y crear y gestionar pedidos.
 
 ## Estructura
