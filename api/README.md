@@ -1,135 +1,108 @@
-# API REST de artículos
+# API REST y base de datos
 
-Backend del proyecto integrador: API REST monolítica en capas para crear, consultar, actualizar y eliminar artículos. Usa Java 17, Spring Boot, Spring Data JPA, Hibernate, Maven y MySQL. La interfaz web complementaria está en `../front`.
+Backend en capas con Java 17, Spring Boot 3, Spring Data JPA, Hibernate, Maven y MySQL. Mantiene la API de artículos de la consigna inicial y agrega los endpoints de catálogo y tienda consumidos por [`../front`](../front/README.md).
 
 ## Requisitos
 
 - JDK 17.
-- MySQL Server iniciado.
-- Eclipse IDE for Java Developers con integración Maven (m2e), o Maven 3.8.6 o superior.
-- Postman para ejecutar la colección incluida.
+- MySQL Server.
+- Maven 3.8.6 o superior, o Eclipse con integración Maven (m2e).
+- Postman para importar la colección de `postman/`.
 
-## Configurar MySQL
+## Instalar o actualizar la base
 
-1. Abrí MySQL Workbench y conectate a tu servidor local.
-2. Ejecutá una sola vez `database/migrate_ecommerce.sql` en MySQL Workbench. Crea `articulos_db`, todas las tablas y el usuario demo; alcanza para una instalación nueva o para actualizar una existente.
-3. La configuración predeterminada usa el usuario `root` y la contraseña `admin`. Si tu instalación tiene otras credenciales, definí `DB_USERNAME` y `DB_PASSWORD` antes de iniciar. También podés cambiar la URL con `DB_URL`.
+En MySQL Workbench, abrí y ejecutá el archivo completo [`database/migrate_ecommerce.sql`](database/migrate_ecommerce.sql). Es el único SQL necesario, tanto para una base nueva como para actualizar una existente. Crea `articulos_db`, instala las tablas, agrega una categoría `General` y el usuario de demostración `demo@mercado.local`, y copia los registros de `articulo` a `producto` con stock inicial cero. Se puede volver a ejecutar sin borrar los datos.
 
-Para dejar toda la base lista o actualizarla, detené la API y ejecutá todo el archivo `database/migrate_ecommerce.sql` desde MySQL Workbench. Conserva `articulo`, crea las tablas de tienda, copia los artículos al catálogo con stock inicial cero y agrega el usuario demo `demo@mercado.local`. Se puede volver a ejecutar sin borrar los datos.
+La configuración local predeterminada apunta a `localhost:3306`, base `articulos_db`, usuario `root` y contraseña `admin`. Para usar otros valores, configurá `DB_URL`, `DB_USERNAME` y `DB_PASSWORD` como variables de entorno. `root/admin` es solo la conexión a MySQL; no es una cuenta de la aplicación.
 
-En PowerShell, por ejemplo:
+## Modelo de datos
 
-```powershell
-$env:DB_USERNAME = "root"
-$env:DB_PASSWORD = "tu contraseña de MySQL"
+Las tablas están separadas para que el inventario, el carrito pendiente y la compra ya registrada tengan reglas y tiempos de vida distintos.
+
+| Tabla | Datos guardados | Motivo y comportamiento |
+| --- | --- | --- |
+| `articulo` | ID, nombre y precio. | Entidad del ejercicio original. Se mantiene para que `/api/articulos` siga cumpliendo la consigna y sus pruebas. |
+| `categoria` | ID y nombre único. | Organiza el catálogo y evita guardar/repetir el nombre de categoría en cada producto. |
+| `producto` | Nombre, descripción, `imagen_url` opcional, precio, stock, categoría y `activo`. | Catálogo real de la tienda. El stock disponible se valida al crear y confirmar pedidos. Al quitar un producto se archiva (`activo=false`) para proteger el historial. |
+| `usuario` | Nombre y correo único. | Identidad de demostración de la persona que opera la tienda; conecta su carrito e historial. No almacena contraseña. |
+| `carrito` | ID y usuario. | Hay como máximo un carrito por usuario; permanece guardado en MySQL entre sesiones del navegador. |
+| `linea_carrito` | Carrito, producto y cantidad. | Guarda qué productos y cantidades eligió la persona. El precio no se congela acá: se toma del catálogo al mostrar y al crear el pedido. |
+| `pedido` | Usuario, fecha de creación, estado y total. | Registra una compra y su evolución (`PENDIENTE`, `CONFIRMADO`, `ENVIADO`, `ENTREGADO` o `CANCELADO`). |
+| `linea_pedido` | Pedido, producto opcional, nombre, cantidad, precio unitario y subtotal. | Guarda una fotografía de los artículos y precios al comprar, para que el historial no cambie cuando se edite o elimine el producto. |
+
+Relaciones principales:
+
+```mermaid
+erDiagram
+    CATEGORIA ||--o{ PRODUCTO : clasifica
+    USUARIO ||--o| CARRITO : conserva
+    CARRITO ||--o{ LINEA_CARRITO : contiene
+    PRODUCTO ||--o{ LINEA_CARRITO : elegido
+    USUARIO ||--o{ PEDIDO : realiza
+    PEDIDO ||--|{ LINEA_PEDIDO : incluye
+    PRODUCTO o|--o{ LINEA_PEDIDO : referencia
 ```
 
-Para otros entornos, preferí configurar las credenciales mediante variables de entorno. Si iniciás la aplicación desde Eclipse, cargá las mismas variables en **Run Configurations… → Environment**.
+`articulo` y `producto` son tablas distintas: el SQL conserva los datos del ejercicio original y los copia al catálogo de tienda. Como `articulo` no tiene categoría ni stock, los registros copiados usan `General` y stock `0`; cargá las existencias reales desde el front antes de confirmar pedidos.
 
-## Abrir y ejecutar en Eclipse
+El pedido creado desde el carrito y el vaciado de ese carrito ocurren en una transacción: si no se guarda el pedido (por ejemplo, por stock insuficiente), el carrito permanece. Los pedidos se crean pendientes; el stock se descuenta al confirmarlos y se reintegra si un pedido confirmado se cancela.
 
-1. Abrí como proyecto la carpeta `api` dentro del repositorio.
-2. En Package Explorer, clic derecho sobre el proyecto → **Configure → Convert to Maven Project**. Si Eclipse ya lo reconoce como Maven, usá **Maven → Update Project…**.
-3. Esperá a que Maven descargue las dependencias y termine la actualización.
-4. Asegurate de que **Project → Properties → Java Build Path → Libraries** use un JDK 17.
-5. Confirmá que MySQL esté iniciado y ejecutá `database/migrate_ecommerce.sql`.
-6. Clic derecho en `ArticuloApiApplication.java` → **Run As → Java Application**. La API queda disponible en `http://localhost:8081`.
+El login solo identifica por correo para la demostración; no es autenticación segura y no protege los endpoints. En el front podés usar `demo@mercado.local` o crear otro usuario.
 
-También podés abrir una terminal en la raíz del proyecto y ejecutar:
+## Ejecutar
 
-```powershell
-mvn spring-boot:run
-```
+### Desde Eclipse
 
-Para crear un JAR ejecutable:
+1. Abrí la carpeta `api` como proyecto. Si Eclipse no lo reconoce, usá **Configure → Convert to Maven Project**; si ya es Maven, **Maven → Update Project…**.
+2. Esperá que Maven descargue dependencias y seleccioná JDK 17 en **Project → Properties → Java Build Path → Libraries**.
+3. Verificá que MySQL esté iniciado y que ya hayas ejecutado el SQL de arriba.
+4. Clic derecho en `ArticuloApiApplication.java` → **Run As → Java Application**.
 
-```powershell
-mvn clean package
-java -jar target/articulo-api-mysql-0.0.1-SNAPSHOT.jar
-```
+La API queda en `http://localhost:8081`. Desde la raíz del repositorio, también podés usar `cd api` y `mvn spring-boot:run`; para generar el JAR: `mvn clean package` y luego `java -jar target/articulo-api-mysql-0.0.1-SNAPSHOT.jar`.
 
-Si `java -version` muestra una versión distinta, seleccioná Temurin JDK 17 en la configuración de JRE de Eclipse o anteponé la carpeta `bin` del JDK 17 a `PATH` en esa terminal.
-
-## Endpoints
+## Endpoints de artículos originales
 
 | Método | Ruta | Resultado |
 | --- | --- | --- |
-| GET | `/api/articulos` | Lista artículos; devuelve `200` y `[]` si no hay registros. |
-| GET | `/api/articulos/{id}` | Devuelve el artículo (`200`) o `404`. |
-| POST | `/api/articulos` | Crea un artículo y devuelve `200` con el ID asignado. |
-| PUT | `/api/articulos/{id}` | Actualiza el artículo (`200`) o devuelve `404`. |
-| DELETE | `/api/articulos/{id}` | Elimina y devuelve `204` sin cuerpo, o `404`. |
+| GET | `/api/articulos` | Lista artículos. |
+| GET | `/api/articulos/{id}` | Consulta uno (`404` si no existe). |
+| POST | `/api/articulos` | Crea `{ "nombre": "Teclado", "precio": 15000 }`. |
+| PUT | `/api/articulos/{id}` | Actualiza un artículo. |
+| DELETE | `/api/articulos/{id}` | Elimina y responde `204`. |
 
-El JSON de entrada para crear o actualizar es:
+Nombre requerido y precio mayor que cero. Se conserva este contrato para la consigna y la colección de pruebas original.
 
-```json
-{
-  "nombre": "Teclado",
-  "precio": 15000
-}
-```
-
-El nombre no puede estar vacío y el precio debe ser mayor que cero. Los datos inválidos producen `400 Bad Request`.
-
-## API adicional de tienda
-
-La consigna PDF exige el endpoint `/api/articulos` con los campos `id`, `nombre` y `precio`. Se mantiene sin cambios para sus pruebas de Postman. La interfaz e-commerce usa además estos endpoints:
+## Endpoints adicionales de tienda
 
 | Método | Ruta | Uso |
 | --- | --- | --- |
-| GET | `/api/productos?incluirInactivos=true` | Lista productos; archivados opcionales. |
-| GET | `/api/productos/{id}` | Consulta un producto. |
-| GET | `/api/productos/stock-bajo?umbral=5` | Lista productos con stock bajo. |
-| POST | `/api/productos` | Crea producto con nombre, descripción, imagenUrl opcional, precio, stock y categoriaId. |
-| PUT | `/api/productos/{id}` | Actualiza esos datos. |
-| DELETE | `/api/productos/{id}` | Archiva el producto para conservar pedidos históricos. |
-| PATCH | `/api/productos/{id}/reactivar` | Reactiva un producto archivado. |
-| GET/POST | `/api/categorias` | Lista o crea categorías. |
-| PUT/DELETE | `/api/categorias/{id}` | Modifica o elimina categorías sin productos asociados. |
-| GET/POST | `/api/usuarios` | Lista o registra usuarios/clientes por correo. |
-| PUT/DELETE | `/api/usuarios/{id}` | Modifica o elimina usuarios sin pedidos. |
-| POST | `/api/auth/login` | Busca un usuario registrado por correo y lo devuelve para el acceso de demostración. |
-| GET/DELETE | `/api/carritos/{usuarioId}` | Consulta o vacía el carrito persistido del usuario. |
-| POST | `/api/carritos/{usuarioId}/items` | Agrega producto y cantidad al carrito; suma la cantidad si ya estaba. |
-| PUT/DELETE | `/api/carritos/{usuarioId}/items/{productoId}` | Cambia cantidad o quita un producto del carrito. |
-| GET | `/api/pedidos?usuarioId={id}` | Lista todos los pedidos o el historial de un usuario. |
-| GET | `/api/pedidos/{id}` | Consulta un pedido con sus líneas. |
-| POST | `/api/pedidos` | Crea pedido pendiente; body con usuarioId y productos [{ productoId, cantidad }]. |
-| POST | `/api/pedidos/desde-carrito` | Valida stock y registra pedido desde el carrito; carrito y pedido se guardan en una transacción. |
-| PUT | `/api/pedidos/{id}/estado` | Avanza o cancela el pedido. |
+| GET | `/api/productos?incluirInactivos=true` | Lista el catálogo; opcionalmente incluye archivados. |
+| GET | `/api/productos/{id}` | Consulta producto. |
+| GET | `/api/productos/stock-bajo?umbral=5` | Consulta productos con stock bajo. |
+| POST / PUT | `/api/productos` / `/api/productos/{id}` | Crea o actualiza; acepta `imagenUrl` HTTP/HTTPS opcional. |
+| DELETE / PATCH | `/api/productos/{id}` / `/api/productos/{id}/reactivar` | Archiva o reactiva. |
+| GET / POST | `/api/categorias` | Lista o crea categorías. |
+| PUT / DELETE | `/api/categorias/{id}` | Actualiza o elimina una categoría sin productos asociados. |
+| GET / POST | `/api/usuarios` | Lista o crea usuarios de demostración. |
+| PUT / DELETE | `/api/usuarios/{id}` | Actualiza o elimina si no tiene pedidos. |
+| POST | `/api/auth/login` | Identifica al usuario por correo. |
+| GET / DELETE | `/api/carritos/{usuarioId}` | Consulta o vacía el carrito. |
+| POST | `/api/carritos/{usuarioId}/items` | Agrega producto y cantidad (suma si ya existe). |
+| PUT / DELETE | `/api/carritos/{usuarioId}/items/{productoId}` | Cambia cantidad o quita el producto. |
+| GET | `/api/pedidos?usuarioId={id}` | Consulta pedidos o historial de un usuario. |
+| GET | `/api/pedidos/{id}` | Consulta un pedido. |
+| POST | `/api/pedidos` | Crea pedido pendiente desde un JSON de líneas. |
+| POST | `/api/pedidos/desde-carrito` | Valida stock, crea pedido y vacía el carrito atómicamente. |
+| PUT | `/api/pedidos/{id}/estado` | Cambia el estado según las transiciones permitidas. |
 
-Estados permitidos: `PENDIENTE → CONFIRMADO → ENVIADO → ENTREGADO`; un pedido pendiente o confirmado puede pasar a `CANCELADO`. El stock se valida al crear el pedido, se vuelve a comprobar y se descuenta al confirmar, y se reintegra al cancelar un pedido confirmado. Al crear un pedido desde el carrito, este se vacía solo si la transacción se completa correctamente. Cada producto admite `imagenUrl` HTTP/HTTPS opcional; sin URL, el front muestra un ícono. El login de demostración identifica por correo y mantiene la selección en el navegador; no usa contraseña, token ni protege los endpoints. No es autenticación segura ni debe usarse en producción. La contraseña `root/admin` es únicamente la conexión local a MySQL.
+## Postman
 
-El SQL de migración copia los artículos antiguos a `producto` con stock cero. Editá cada existencia desde el front antes de confirmar pedidos. También agrega `imagen_url`, `carrito` y `linea_carrito`; volvé a ejecutar el archivo de migración completo si ya lo habías aplicado.
+Importá [`postman/Articulo API MySQL.postman_collection.json`](postman/Articulo%20API%20MySQL.postman_collection.json). La colección usa `http://localhost:8081` como `baseUrl`; las solicitudes originales de artículos se ejecutan en orden para reutilizar los IDs.
 
-## Colección de Postman
+## Código anterior
 
-Importá `postman/Articulo API MySQL.postman_collection.json` en Postman. La colección usa `http://localhost:8081` como `baseUrl`; ejecutá las primeras diez solicitudes en orden para que las pruebas de actualización y eliminación reutilicen los IDs creados. La solicitud 11 comprueba la lista vacía y requiere una tabla sin registros; la 12 se ejecuta después de reiniciar la aplicación para comprobar persistencia.
-
-Para revisar los cambios directamente en MySQL Workbench:
-
-```sql
-USE articulos_db;
-DESCRIBE articulo;
-SELECT * FROM articulo;
-SELECT * FROM articulo WHERE id = 1;
-```
-
-## Estructura
-
-```text
-src/main/java/com/ejemplo/articulos/
-├── ArticuloApiApplication.java
-├── controller/ArticuloController.java
-├── model/Articulo.java
-├── repository/ArticuloRepository.java
-└── service/
-    ├── ArticuloService.java
-    └── ArticuloServiceImpl.java
-```
-
-El código de consola de la preentrega anterior se conserva aparte en `preentrega-console/`; no forma parte del source root Maven ni del alcance de esta API.
+El proyecto de consola de preentrega se conserva en `preentrega-console/` separado de `src/main/java`; no forma parte del source root de Maven.
 
 ## Grabación de la defensa
 
-El enunciado pide incluir un enlace a la grabación de la demostración. Después de grabar y subir el video, agregá aquí el enlace de YouTube; todavía no hay una URL de grabación proporcionada.
+La consigna pide agregar un enlace a la grabación de la demostración. Cuando el video esté grabado y publicado, colocá aquí su URL; todavía no se incluyó ningún enlace.
