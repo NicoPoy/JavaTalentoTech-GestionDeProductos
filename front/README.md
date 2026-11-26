@@ -1,10 +1,11 @@
-# Frontend del e-commerce
+# Frontend de gestión de artículos
 
-Sitio estático basado en el proyecto de Front-End JS compartido. El catálogo consulta `http://localhost:8081/api/articulos`; el carrito se conserva en `localStorage`.
+Interfaz responsive en HTML, CSS y JavaScript con tema oscuro e iconos. Se conecta a la API REST local para listar, crear, editar y eliminar artículos. La API actual admite los campos `nombre` y `precio`; el carrito se conserva en `localStorage`.
 
 ## Ejecución local
 
-1. Iniciá primero el backend siguiendo [`../api/README.md`](../api/README.md).
-2. Abrí `index.html` con la extensión **Live Server** de VS Code, o serví esta carpeta desde un servidor HTTP local.
+1. Iniciá MySQL y luego la API siguiendo [`../api/README.md`](../api/README.md).
+2. Abrí esta carpeta en VS Code y ejecutá `index.html` con **Live Server**.
+3. La interfaz consulta `http://localhost:8081/api/articulos`.
 
-La entidad actual de la API solo devuelve `id`, `nombre` y `precio`; por eso las imágenes y descripciones se muestran con valores de reemplazo. El carrito funciona en el navegador, pero el botón de compra todavía no crea pedidos en MySQL. Para completar el flujo indicado en la consigna hay que ampliar la API con atributos de producto y endpoints de pedidos.
+El flujo de pedidos aún no se registra en el backend: para eso es necesario implementar endpoints y persistencia de pedidos en la API.

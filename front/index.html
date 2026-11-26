@@ -1,247 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mi E-Commerce</title>
+    <meta name="theme-color" content="#f5f7fb" />
+    <title>Mercado | Gestión de artículos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="css/styles.css" />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+    <script src="js/script.js" defer></script>
   </head>
-
   <body>
-    <header
-      class="d-flex justify-content-between align-items-center p-3 bg-light"
-    >
-      <img
-        src="https://dummyimage.com/300x300/cccccc/000000.png"
-        width="100"
-        height="100"
-        alt="Logo"
-      />
-      <nav>
-        <ul class="menu d-flex list-unstyled gap-3">
-          <li class="itemMenu">
-            <a href="#productos" class="text-dark">Productos</a>
-          </li>
-          <li class="itemMenu">
-            <a href="#reseñas" class="text-dark">Reseñas</a>
-          </li>
-          <li class="itemMenu">
-            <a href="#carrito" class="text-dark" id="open-cart">
-              Carrito (<span id="cart-counter-nav">0</span>)
-            </a>
-          </li>
-          <li class="itemMenu">
-            <a href="#redes-sociales" class="text-dark">Redes Sociales</a>
-          </li>
-        </ul>
-      </nav>
-    </header>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegación principal">
+        <a class="brand" href="#inicio" aria-label="Mercado, inicio">
+          <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9.5h16l-1.2 10H5.2L4 9.5Z"/><path d="m7 9.5 1.3-5h7.4l1.3 5M9 13v3m6-3v3"/></svg></span>
+          <span>mercado<span class="brand-dot">.</span><small>Panel de gestión</small></span>
+        </a>
+        <p class="nav-caption">MENÚ PRINCIPAL</p>
+        <nav class="side-nav">
+          <a class="nav-link active" href="#productos"><span class="nav-icon" aria-hidden="true">▦</span> Productos</a>
+          <button class="nav-link" id="open-cart" type="button"><span class="nav-icon" aria-hidden="true">♧</span> Carrito <span class="nav-badge" id="cart-counter-nav">0</span></button>
+        </nav>
+        <div class="sidebar-note"><span class="note-icon" aria-hidden="true">✦</span><strong>Catálogo conectado</strong><p>Los cambios se guardan en tu base de datos.</p><span class="connection"><i></i> API local</span></div>
+        <div class="sidebar-user"><span class="avatar">A</span><span><strong>Administrador</strong><small>Gestión de tienda</small></span><span class="user-dots" aria-hidden="true">•••</span></div>
+      </aside>
 
-    <main class="main-content">
-      <section class="portada text-center p-5">
-        <h1>Mi web e-commerce</h1>
-        <p>
-          Lorem ipsum dolor sit, amet consectetur adipisicing elit. Consequatur
-          ducimus itaque rem!
-        </p>
-      </section>
+      <main class="main-area" id="inicio">
+        <header class="topbar"><div><span class="eyebrow">TIENDA / CATÁLOGO</span><h1>Productos</h1></div><div class="topbar-actions"><span class="today-label">Panel de administración</span><button class="icon-button cart-top" id="open-cart-top" type="button" aria-label="Abrir carrito"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 10.2a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 2-1.6L21 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg><span id="cart-counter" class="cart-count">0</span></button></div></header>
 
-      <section id="productos" class="contenedorCards container my-5">
-        <h2 class="text-center">Productos</h2>
-        <p id="productos-status" class="text-center text-muted" role="status"></p>
-        <div
-          id="productos-container"
-          class="d-flex flex-wrap justify-content-around gap-3"
-        >
-          <!-- Productos serán insertados aquí -->
-        </div>
-      </section>
+        <section class="welcome-banner" aria-label="Resumen del catálogo"><div class="welcome-copy"><span class="banner-kicker">TU TIENDA, EN ORDEN</span><h2>Todo tu catálogo<br />en un solo lugar<span>.</span></h2><p>Administrá tus artículos de forma simple y mantené la tienda actualizada.</p><a class="banner-link" href="#catalogo">Ver catálogo <span aria-hidden="true">→</span></a></div><div class="banner-art" aria-hidden="true"><div class="art-circle circle-one"></div><div class="art-circle circle-two"></div><div class="art-card"><span>✦</span><b>CATÁLOGO</b><div class="art-lines"><i></i><i></i><i></i></div></div><div class="art-spark">✳</div></div></section>
 
-      <!-- Sección de reseñas -->
-      <section id="reseñas" class="container my-5">
-        <h2 class="text-center">Reseñas</h2>
-        <div class="row">
-          <div class="col-12 col-md-4">
-            <div class="card">
-              <img
-                src="https://dummyimage.com/150x150/cccccc/000000.png"
-                width="150"
-                height="150"
-                class="card-img-top"
-                alt="Cliente 1"
-              />
-              <div class="card-body">
-                <h5 class="card-title">Cliente 1</h5>
-                <p class="card-text">
-                  Lorem ipsum dolor sit amet consectetur, adipisicing elit. Iure
-                  asperiores nobis voluptatum corporis eos atque accusamus
-                  provident unde.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div class="col-12 col-md-4">
-            <div class="card">
-              <img
-                src="https://dummyimage.com/150x150/cccccc/000000.png"
-                width="150"
-                height="150"
-                class="card-img-top"
-                alt="Cliente 2"
-              />
-              <div class="card-body">
-                <h5 class="card-title">Cliente 2</h5>
-                <p class="card-text">
-                  Lorem ipsum dolor sit, amet consectetur adipisicing elit. Vel
-                  similique ipsa et laudantium, animi ea eligendi quibusdam quis
-                  dolorum nulla.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div class="col-12 col-md-4">
-            <div class="card">
-              <img
-                src="https://dummyimage.com/150x150/cccccc/000000.png"
-                width="150"
-                height="150"
-                class="card-img-top"
-                alt="Cliente 3"
-              />
-              <div class="card-body">
-                <h5 class="card-title">Cliente 3</h5>
-                <p class="card-text">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Autem
-                  ullam illo facilis sint. Ullam omnis dolores inventore?
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+        <section class="stats-grid" aria-label="Resumen">
+          <article class="stat-card"><span class="stat-icon icon-violet" aria-hidden="true">▦</span><div><p>Artículos publicados</p><strong id="stat-total">—</strong></div><span class="stat-foot">en el catálogo</span></article>
+          <article class="stat-card"><span class="stat-icon icon-green" aria-hidden="true">$</span><div><p>Precio promedio</p><strong id="stat-average">—</strong></div><span class="stat-foot">por artículo</span></article>
+          <article class="stat-card"><span class="stat-icon icon-orange" aria-hidden="true">⌕</span><div><p>Mostrando</p><strong id="stat-visible">—</strong></div><span class="stat-foot">resultados actuales</span></article>
+        </section>
 
-    <!-- CARRITO SIDEBAR -->
-    <div id="cart-sidebar" class="cart-sidebar">
-      <div class="cart-header">
-        <h3>Carrito <span id="cart-counter" class="cart-counter">0</span></h3>
-      </div>
+        <section class="catalog-section" id="productos">
+          <div class="section-heading"><div><span class="eyebrow">INVENTARIO</span><h2>Tu catálogo</h2><p>Creá, buscá y actualizá los artículos de tu tienda.</p></div><button id="new-product" class="button button-primary" type="button"><span aria-hidden="true">＋</span> Nuevo artículo</button></div>
+          <div class="toolbar"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4 4"/></svg><input id="search-products" type="search" placeholder="Buscar por nombre o ID..." autocomplete="off" /><kbd>⌕</kbd></label><button id="refresh-products" class="button button-light" type="button"><span aria-hidden="true">↻</span> Actualizar lista</button></div>
+          <div id="products-status" class="status-message" role="status" aria-live="polite"></div>
+          <div id="products-grid" class="products-grid" aria-live="polite"></div>
+        </section>
 
-      <div class="cart-content">
-        <div id="carrito-items" class="cart-items">
-          <!-- Items del carrito serán insertados aquí -->
-        </div>
-
-        <div class="cart-footer">
-          <div class="cart-total">
-            <strong>Total: $<span id="carrito-total">0</span></strong>
-          </div>
-
-          <div class="cart-actions">
-            <button id="vaciar-carrito" class="btn btn-danger btn-sm">
-              Vaciar
-            </button>
-            <button id="realizar-compra" class="btn btn-success">
-              Comprar
-            </button>
-          </div>
-        </div>
-      </div>
+        <footer class="page-footer"><span>Mercado <b>·</b> Administración de catálogo</span><span>Conectado a la API de artículos</span></footer>
+      </main>
     </div>
 
-    <!-- Overlay para móviles -->
-    <div id="cart-overlay" class="cart-overlay"></div>
-
-    <!-- Modal de Compra Exitosa -->
-    <div
-      class="modal fade"
-      id="compraExitosaModal"
-      tabindex="-1"
-      aria-labelledby="compraExitosaModalLabel"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header bg-success text-white">
-            <h5 class="modal-title" id="compraExitosaModalLabel">
-              Pedido pendiente de integración
-            </h5>
-            <button
-              type="button"
-              class="btn-close btn-close-white"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
-          </div>
-          <div class="modal-body text-center">
-            <div class="mb-3">
-              <div class="text-success" style="font-size: 4rem">✓</div>
-            </div>
-            <h4>Tu carrito está listo.</h4>
-            <p class="text-muted">
-              El pedido todavía no se envía ni se registra en el backend.
-            </p>
-            <p>
-              <strong>Total pagado: $<span id="modal-total">0</span></strong>
-            </p>
-          </div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-success"
-              data-bs-dismiss="modal"
-            >
-              Volver a la tienda
-            </button>
-          </div>
-        </div>
-      </div>
+    <div class="modal-backdrop" id="product-modal" hidden>
+      <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="form-title">
+        <button class="dialog-close" id="close-modal" type="button" aria-label="Cerrar">×</button>
+        <span class="dialog-icon" aria-hidden="true">✦</span><span class="eyebrow">CATÁLOGO</span>
+        <h2 id="form-title">Nuevo artículo</h2><p class="dialog-subtitle">Completá los datos para guardar el artículo.</p>
+        <form id="product-form" novalidate>
+          <label class="field-label" for="product-name">Nombre</label><input class="form-control" id="product-name" name="nombre" maxlength="120" placeholder="Ej. Auriculares inalámbricos" required />
+          <label class="field-label" for="product-price">Precio</label><div class="price-input"><span>$</span><input class="form-control" id="product-price" name="precio" type="number" min="0.01" step="0.01" placeholder="0,00" required /></div>
+          <p class="form-hint">El precio debe ser mayor que cero.</p><p class="form-error" id="form-error" role="alert"></p>
+          <div class="dialog-actions"><button class="button button-light" id="cancel-modal" type="button">Cancelar</button><button class="button button-primary" id="save-product" type="submit">Guardar artículo</button></div>
+        </form>
+      </section>
     </div>
 
-    <footer
-      id="redes-sociales"
-      class="bg-light p-4 mt-5 d-flex justify-content-between align-items-center"
-    >
-      <img
-        src="https://dummyimage.com/120x120/cccccc/000000.png"
-        width="120"
-        height="120"
-        alt="Logo"
-      />
-      <div class="d-flex gap-4">
-        <a href="https://www.facebook.com" target="_blank">
-          <img
-            src="https://dummyimage.com/60x60/cccccc/000000.png"
-            width="60"
-            height="60"
-            alt="Facebook"
-          />
-        </a>
-        <a href="https://www.instagram.com" target="_blank">
-          <img
-            src="https://dummyimage.com/60x60/cccccc/000000.png"
-            width="60"
-            height="60"
-            alt="Instagram"
-          />
-        </a>
-        <a href="https://www.x.com" target="_blank">
-          <img
-            src="https://dummyimage.com/600x60/cccccc/000000.png"
-            width="60"
-            height="60"
-            alt="Twitter"
-          />
-        </a>
-      </div>
-    </footer>
+    <div class="toast" id="toast" role="status" aria-live="polite"><span class="toast-check" aria-hidden="true">✓</span><span id="toast-text"></span></div>
 
-    <script src="js/script.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <aside class="cart-sidebar" id="cart-sidebar" aria-label="Carrito" aria-hidden="true">
+      <div class="cart-header"><div><span class="eyebrow">TU SELECCIÓN</span><h2>Carrito <span id="cart-counter-panel">0</span></h2></div><button id="close-cart" class="dialog-close" type="button" aria-label="Cerrar carrito">×</button></div>
+      <div id="cart-items" class="cart-items"></div>
+      <div class="cart-footer"><div class="cart-total"><span>Total</span><strong><span id="cart-total">$0,00</span></strong></div><p>El carrito se guarda en este navegador.</p><button id="clear-cart" class="button button-light" type="button">Vaciar carrito</button><button id="checkout-button" class="button button-primary" type="button" disabled>Continuar</button><p class="checkout-note">La creación de pedidos todavía no está disponible en la API.</p></div>
+    </aside>
   </body>
 </html>
